@@ -108,6 +108,8 @@ TicketDesk lets companies (**tenants**) run customer support. Any company can si
 | P3 Normal | 1 business day | 3 business days |
 | P4 Low | 3 business days | 10 business days |
 
+SLA clock rules: P1 runs 24×7. P2–P4 run in **tenant business hours** (tenant timezone + weekly schedule; default Mon–Fri 09:00–18:00; no holiday calendar in v1). The resolution clock pauses while a ticket is `pending_customer`. Deadlines are computed from creation minus paused time and are never restarted (TD-007 grill).
+
 Error-budget policy: when a budget is exhausted, feature work pauses until it recovers.
 
 ## 9. Security level
@@ -153,4 +155,5 @@ Error-budget policy: when a budget is exhausted, feature work pauses until it re
 | Date | Change | PR |
 |---|---|---|
 | 2026-10-06 | Initial | M1 |
+| 2026-10-07 | SLA clock rules footnote (TD-007 grill Q1, Q2, Q6) | M2 |
 | 2026-10-07 | Grilled (Q1–Q9): self-serve signup, per-tenant identity, slug routing, no attachments, in-app notifications, auth-only email, AI opt-in, per-tenant AI caps | M1 |

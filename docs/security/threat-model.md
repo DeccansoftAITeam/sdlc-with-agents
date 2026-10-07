@@ -70,6 +70,7 @@ flowchart LR
 | TM-013 | U → A | DoS / cost | Scripted **self-serve signups** create fake tenants to spam or burn AI tokens | H | M | Tenant-creation rate limit per IP; email verification before inviting staff; AI off by default (opt-in); per-tenant AI cap | Planned | `test_signup_rate_limit`, `test_ai_disabled_by_default` |
 | TM-014 | A → mail | Spoofing | Verification or reset link stolen or replayed | M | H | Tokens: 256-bit random, stored hashed, single-use, 30-min expiry; all sessions revoked on reset | Planned | `test_reset_token_single_use_and_expiry` |
 | TM-015 | A | Disclosure | Signup, login or reset responses reveal whether an email exists in a tenant | M | M | Identical responses and timing for known and unknown emails | Planned | `test_no_account_enumeration` |
+| TM-016 | Q (SLA worker) | DoS | One huge tenant makes the SLA sweep exceed 30 s, delaying breaches for all tenants | M | M | Per-tenant batch limit (1000 rows per sweep); `sla_sweep_duration_seconds` alert at 5 s; capacity test | Planned | M8 capacity test |
 
 ## 3. AI threats — OWASP LLM Top 10 (2025)
 
@@ -133,4 +134,5 @@ The in-product AI has no tools or memory, so ASI06–ASI09 are N/A for the produ
 | Date | Version | Change | Participants |
 |---|---|---|---|
 | 2026-10-06 | 1 | Initial (P0) | TL, Dev |
+| 2026-10-07 | 2.1 | TD-007 design delta: TM-016 | TL |
 | 2026-10-07 | 2 | `/grill` Q1–Q9: added TM-013/014/015, withdrew TM-010, hardened TM-003 and LLM10 | TL, PO (agent-led grill) |
