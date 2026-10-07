@@ -1,0 +1,6 @@
+# Migration safety lint (expand -> contract, no locking DDL). Input: SQL of NEW revisions only.
+# Every rule is on. A rule may be excluded only through an ADR.
+excluded_rules = []
+pg_version = "17"
+# Alembic --sql output already contains its own BEGIN/COMMIT, so the transaction is explicit.
+assume_in_transaction = false

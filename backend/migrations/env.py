@@ -13,6 +13,10 @@ from app.features import load_models
 load_models()
 target_metadata = Base.metadata
 
+# Every migration fails fast instead of queueing behind live traffic (squawk:
+# require-timeout-settings). Long backfills set their own timeout explicitly.
+TIMEOUTS = ("SET lock_timeout = '5s'", "SET statement_timeout = '60s'")
+
 
 def run_migrations_offline() -> None:
     context.configure(
@@ -22,12 +26,16 @@ def run_migrations_offline() -> None:
         dialect_opts={"paramstyle": "named"},
     )
     with context.begin_transaction():
+        for stmt in TIMEOUTS:
+            context.execute(stmt)
         context.run_migrations()
 
 
 def _run(connection: Connection) -> None:
     context.configure(connection=connection, target_metadata=target_metadata, compare_type=True)
     with context.begin_transaction():
+        for stmt in TIMEOUTS:
+            context.execute(stmt)
         context.run_migrations()
 
 
