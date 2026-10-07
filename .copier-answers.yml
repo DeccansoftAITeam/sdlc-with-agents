@@ -1,0 +1,13 @@
+# Changes here will be overwritten by Copier; NEVER EDIT MANUALLY
+_commit: v1.0.0
+_src_path: gh:DeccansoftAITeam/project-scaffold
+agent_bundle_ref: v2.1.1
+asvs_level: L2
+cloud: azure
+description: Multi-tenant support desk with AI triage and AI-suggested replies
+github_owner: DeccansoftAITeam
+has_ai: true
+multi_tenant: true
+project_name: TicketDesk
+project_slug: ticketdesk
+region: eastus2

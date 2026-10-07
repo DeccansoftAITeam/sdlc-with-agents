@@ -1,0 +1,14 @@
+{
+  "name": "ticketdesk",
+  "private": true,
+  "packageManager": "pnpm@12.4.2",
+  "scripts": {
+    "typecheck": "nx run-many -t typecheck",
+    "test": "nx run-many -t test",
+    "dev:web": "pnpm --filter web dev"
+  },
+  "devDependencies": {
+    "nx": "23.2.1",
+    "typescript": "7.0.2"
+  }
+}

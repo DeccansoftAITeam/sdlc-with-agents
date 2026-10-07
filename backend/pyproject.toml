@@ -1,0 +1,62 @@
+[project]
+name = "ticketdesk-backend"
+version = "0.1.0"
+description = "Multi-tenant support desk with AI triage and AI-suggested replies"
+requires-python = ">=3.12"
+dependencies = [
+  "fastapi>=0.115",
+  "uvicorn[standard]>=0.32",
+  "sqlalchemy[asyncio]>=2.0.36",
+  "asyncpg>=0.30",
+  "alembic>=1.14",
+  "pydantic-settings>=2.6",
+  "opentelemetry-sdk>=1.28",
+  "opentelemetry-exporter-otlp-proto-http>=1.28",
+  "opentelemetry-instrumentation-fastapi>=0.49b0",
+  "pgvector>=0.3",
+]
+
+[dependency-groups]
+dev = [
+  "pytest>=8.3",
+  "pytest-asyncio>=0.24",
+  "pytest-cov>=6.0",
+  "pytest-xdist>=3.6",
+  "httpx>=0.28",
+  "hypothesis>=6.120",
+  "mypy>=1.13",
+  "ruff>=0.8",
+]
+
+[tool.ruff]
+line-length = 110
+target-version = "py312"
+
+[tool.ruff.lint]
+# AD-09: complexity (C90), security (S), bugbear (B), imports (I), pyupgrade (UP)
+select = ["E", "F", "W", "I", "B", "UP", "S", "C90", "ASYNC", "RUF"]
+ignore = ["S101"]  # asserts are fine in tests; production code uses explicit errors
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S", "B"]
+"migrations/**" = ["E501"]
+
+[tool.ruff.lint.mccabe]
+max-complexity = 10
+
+[tool.mypy]
+strict = true
+python_version = "3.12"
+plugins = ["pydantic.mypy"]
+exclude = ["migrations/"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "session"
+asyncio_default_test_loop_scope = "session"
+testpaths = ["tests"]
+markers = [
+  "slow: excluded from the pre-push gate; runs in CI",
+  "req(id): acceptance criterion this test proves, e.g. req('TD-007/AC-3')",
+]
+addopts = "--cov=app --cov-report=term-missing:skip-covered --cov-fail-under=80"

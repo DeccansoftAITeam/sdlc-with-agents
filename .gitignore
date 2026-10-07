@@ -1,7 +1,13 @@
 .venv/
 __pycache__/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
 node_modules/
 .next/
+.nx/
+dist/
 .env
 .env.*
 !.env.example

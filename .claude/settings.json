@@ -68,7 +68,11 @@
       "Edit(./docs/constitution.md)",
       "Edit(./.claude/skills/**)",
       "Edit(./.github/agents/**)",
-      "Edit(./skills-lock.json)"
+      "Edit(./skills-lock.json)",
+      "Bash(git commit --no-verify:*)",
+      "Bash(git push --no-verify:*)",
+      "Edit(./.pre-commit-config.yaml)",
+      "Edit(./.copier-answers.yml)"
     ]
   },
   "env": {
@@ -81,7 +85,7 @@
       "source": {
         "source": "github",
         "repo": "DeccansoftAITeam/agent-bundle",
-        "ref": "v2.0.0"
+        "ref": "v2.1.1"
       }
     }
   },

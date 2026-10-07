@@ -11,6 +11,23 @@ description: Implements one approved tasks.md item acceptance-test-first. Writes
 - The spec's acceptance criteria referenced by that task
 - `AGENTS.md`, relevant ADRs
 
+## Phase 0: activate the scope guard
+
+Create `.agents/progress/<task-id>.md` with these sections, copying every path from the task's "Files in scope" as a list item in backticks:
+
+```markdown
+## Objective
+## Files in scope
+- `backend/app/features/sla/sweep.py`
+- `backend/tests/features/sla/**`
+## Done
+## Pending
+## Decisions
+## Blockers
+```
+
+Then write the task id to `.agents/progress/ACTIVE`. From now on the `scope_guard` hook **blocks** edits outside that list. If you hit a block, don't work around it: stop and ask. When the task's PR is opened, delete `ACTIVE`.
+
 ## Phase A: acceptance tests (then STOP)
 
 1. For each referenced criterion, write an acceptance test through the **public interface** (an HTTP API test with httpx, or a Playwright E2E test). Name it `test_<id>_ac<n>_<behaviour>`, e.g. `test_td007_ac2_breach_notifies_assignee`.

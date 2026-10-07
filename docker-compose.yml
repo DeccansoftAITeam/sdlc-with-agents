@@ -1,0 +1,16 @@
+# Local development + CI database. `docker compose up -d db`
+services:
+  db:
+    image: pgvector/pgvector:pg17
+    environment:
+      POSTGRES_PASSWORD: postgres
+    ports: ["5432:5432"]
+    volumes:
+      - ./db/init:/docker-entrypoint-initdb.d:ro
+      - dbdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d ticketdesk"]
+      interval: 2s
+      retries: 30
+volumes:
+  dbdata:

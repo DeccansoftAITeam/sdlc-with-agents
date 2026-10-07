@@ -9,6 +9,8 @@ Migrations are **high-risk** changes. They need two approvals, one of them the T
 
 ## Steps
 
+0. If this runs as a `tasks.md` task, activate the scope guard first (same as `acceptance-tdd` Phase 0).
+
 1. Update the SQLAlchemy models first. Then run `uv run alembic revision --autogenerate -m "<id>: <what>"`.
 2. **Read the generated file and fix it.** Autogenerate misses renames, server defaults, enum changes and RLS.
 3. Classify every operation:

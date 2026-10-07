@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "hooks": {
+    "preToolUse": [
+      {
+        "type": "command",
+        "bash": "python .agents/hooks/scope_guard.py copilot",
+        "powershell": "python .agents/hooks/scope_guard.py copilot",
+        "timeoutSec": 10
+      }
+    ]
+  }
+}

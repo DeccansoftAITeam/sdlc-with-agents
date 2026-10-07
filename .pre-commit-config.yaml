@@ -1,0 +1,90 @@
+# The P4 LOCAL gate (AD-08). Installed automatically by the scaffold.
+# pre-commit: fast (< 5 s).  pre-push: < 90 s budget.  commit-msg: conventional commits.
+# Mutation, fuzzing, full E2E and AI evals belong in CI only; adding them here
+# pushes people to --no-verify, which agents are forbidden to use (org rules §3.5).
+# The backend checks need the local DB: `docker compose up -d db`.
+
+default_install_hook_types: [pre-commit, pre-push, commit-msg]
+
+repos:
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.24.0
+    hooks:
+      - id: gitleaks              # a secret must never reach history
+        stages: [pre-commit]
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.13.0
+    hooks:
+      - id: ruff
+        args: [--fix]
+        files: ^backend/
+      - id: ruff-format
+        files: ^backend/
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: check-merge-conflict
+      - id: check-yaml
+        args: [--allow-multiple-documents]
+      - id: check-json
+        exclude: ^(apps/web/tsconfig\.json|\.vscode/settings\.json)$   # JSONC
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+      - id: check-added-large-files
+        args: [--maxkb=500]
+
+  - repo: https://github.com/compilerla/conventional-pre-commit
+    rev: v4.2.0
+    hooks:
+      - id: conventional-pre-commit   # feeds release-please (M9)
+        stages: [commit-msg]
+
+  - repo: local
+    hooks:
+      - id: check-public-env
+        name: no secrets in NEXT_PUBLIC_* env vars
+        entry: node scripts/check-public-env.js
+        language: system
+        pass_filenames: false
+        stages: [pre-push]
+
+      - id: check-file-length
+        name: no source file over 1000 lines (AD-09)
+        entry: python scripts/check_file_length.py --max 1000
+        language: system
+        pass_filenames: false
+        stages: [pre-push]
+
+      - id: squawk-migrations
+        name: migration safety lint (no locking DDL)
+        entry: bash scripts/squawk_migrations.sh
+        language: system
+        files: ^backend/migrations/versions/
+        pass_filenames: false
+        stages: [pre-push]
+
+      - id: web-typecheck-test
+        name: web typecheck + unit tests (affected)
+        entry: pnpm nx affected -t typecheck test --parallel=3
+        language: system
+        files: ^(apps|packages)/
+        pass_filenames: false
+        stages: [pre-push]
+
+      - id: backend-typecheck
+        name: mypy strict (backend)
+        entry: bash -c "cd backend && uv run mypy app"
+        language: system
+        files: ^backend/
+        pass_filenames: false
+        stages: [pre-push]
+
+      - id: backend-tests
+        name: backend tests + 80% coverage + architecture tests
+        entry: bash -c "cd backend && uv run pytest -q -m 'not slow'"
+        language: system
+        files: ^backend/
+        pass_filenames: false
+        stages: [pre-push]

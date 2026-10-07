@@ -1,0 +1,57 @@
+# P5 PR gate — scaffold v1 subset. Runs the same checks as the local gate, on a clean machine.
+# The full standard gate (contract, mutation, security, e2e-smoke, agent attribution, ...)
+# is added by later scaffold releases (course M6, M8, M9) and pulled in with `copier update`.
+name: pr-gate
+on:
+  pull_request:
+  merge_group:
+permissions:
+  contents: read
+concurrency:
+  group: pr-gate-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  hygiene:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+        with: { fetch-depth: 0 }
+      - uses: astral-sh/setup-uv@v6
+      - run: uvx pre-commit run --all-files --hook-stage pre-commit
+      - run: python scripts/check_file_length.py --max 1000
+
+  backend:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      db:
+        image: pgvector/pgvector:pg17
+        env: { POSTGRES_PASSWORD: postgres }
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 2s --health-retries 30
+    steps:
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v6
+      - name: Create roles (same script as docker compose)
+        env: { PGPASSWORD: postgres }
+        run: psql -h localhost -U postgres -v ON_ERROR_STOP=1 -f db/init/01-roles.sql
+      - working-directory: backend
+        run: |
+          uv sync --frozen
+          uv run ruff check . && uv run ruff format --check .
+          uv run mypy app
+          uv run pytest -q
+
+  web:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with: { node-version: 22, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm typecheck && pnpm test

@@ -1,12 +1,14 @@
 {
   "bundle": "DeccansoftAITeam/agent-bundle",
-  "version": "2.0.0",
-  "commit": "3156d71c222d7184eae5b5c675cee1d48e0052e8",
+  "version": "2.1.1",
+  "commit": "9da35b916b9d31dfd315aaf9a25790ecf1f61828",
   "files": [
     ".agents/org/org-rules.md",
     ".agents/mcp-allowlist.yml",
     ".agents/hooks/audit_log.py",
+    ".agents/hooks/scope_guard.py",
     ".github/hooks/audit.json",
+    ".github/hooks/scope-guard.json",
     ".github/agents/code-reviewer.agent.md",
     ".github/agents/security-reviewer.agent.md"
   ]
