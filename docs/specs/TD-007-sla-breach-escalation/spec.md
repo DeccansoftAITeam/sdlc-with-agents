@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Status | **Grilled** (2026-10-07; approval pending with `tasks.md`) |
+| Status | **Approved** (2026-10-07) |
 | Product Owner | DeccansoftAITeam |
 | Tech Lead | DeccansoftAITeam |
 | Change-risk tier | Medium (application code; new columns only, no auth or PII) |
@@ -85,5 +85,5 @@ Not applicable. (TD-008 AI triage may change priority; AC-13 covers that path li
 
 | Role | Name | Date |
 |---|---|---|
-| Product Owner | | |
-| Tech Lead | | |
+| Product Owner | DeccansoftAITeam | 2026-10-07 |
+| Tech Lead | DeccansoftAITeam | 2026-10-07 |

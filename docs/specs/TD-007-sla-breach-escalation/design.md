@@ -3,7 +3,7 @@
 | Field | Value |
 |---|---|
 | Spec | ./spec.md |
-| Status | Draft (approval with `tasks.md`) |
+| Status | Approved |
 | Author (human accountable) | DeccansoftAITeam |
 | Drafted by agent? | Yes: Claude Code, Opus 5.5 (M1) |
 | Approver | Tech Lead |
@@ -136,4 +136,4 @@ ORDER BY breach_active_at ASC NULLS LAST, <existing queue order>
 
 | Role | Name | Date |
 |---|---|---|
-| Tech Lead | | |
+| Tech Lead | DeccansoftAITeam | 2026-10-07 |

@@ -4,7 +4,7 @@
 |---|---|
 | Spec | ./spec.md |
 | Design | ./design.md |
-| Status | **Draft: awaiting Tech Lead approval** |
+| Status | **Approved**: agents may execute (after TD-005 and TD-006 are merged) |
 | Prerequisites | TD-005 and TD-006 merged |
 
 ## Task index
@@ -135,5 +135,5 @@ T-007-02 and T-007-03 can run **in parallel**, for example Claude Code on one an
 
 | Role | Name | Date |
 |---|---|---|
-| Tech Lead | | |
-| Product Owner (spec) | | |
+| Tech Lead | DeccansoftAITeam | 2026-10-07 |
+| Product Owner (spec) | DeccansoftAITeam | 2026-10-07 |

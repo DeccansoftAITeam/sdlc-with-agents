@@ -91,6 +91,12 @@ git commit -m "docs(p1): TD-007 spec (grilled), design, ADR-0001..0003, tasks (a
 git push && git tag m02-done && git push origin m02-done
 ```
 
+## Step 8 — The foundations (reference only)
+
+TD-007 needs TD-001…TD-006 to exist. The reference solution specs them with a **brief grill**: the agent proposes decisions, the PO/TL reviews one list ([`foundations grill log`](../../docs/grill-logs/2026-10-07-foundations.md)) instead of answering each question live. Their combined plan is [`docs/specs/FOUNDATIONS-tasks.md`](../../docs/specs/FOUNDATIONS-tasks.md), which M4 executes.
+
+> When is a brief grill acceptable? When the feature follows decisions already made (ADRs, constitution). A feature that *creates* new product decisions, like TD-007, gets the full grill.
+
 ## Done when
 
 - [ ] Spec status is `Approved`, with no open questions left
