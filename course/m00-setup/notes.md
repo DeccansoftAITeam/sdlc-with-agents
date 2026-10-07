@@ -54,7 +54,33 @@ Checks happen at four **gate layers**. Each layer is a different speed of feedba
 
 In every mode, an agent **never** merges, deploys, reads production data, edits gate configs or skips a test. These limits are enforced by permissions and branch rules, not by asking the agent nicely.
 
-## 5. The hats you will wear
+## 5. The org agent bundle: installed before the first prompt
+
+Agents need the rules *before* they touch the repo, so every project starts with the **org bundle**:
+
+| Layer | What | Who changes it |
+|---|---|---|
+| L1 Org rules | Forbidden actions, modes, attribution, injection hygiene | Platform Owner only |
+| L2 Project `AGENTS.md` | Project facts and commands (a stub now, full in M3) | Tech Lead |
+| L3 Adapters | `CLAUDE.md`, `copilot-instructions.md`, permissions, hooks | Platform Owner |
+| L4 Skills + subagents | `grill`, `spec-draft`, `acceptance-tdd`, `migration-writer`, `test-generator`, `code-reviewer`, `security-reviewer` | Platform Owner |
+| L5 Tool allow-list | `.agents/mcp-allowlist.yml` | Platform Owner |
+
+**One source, two packagings.** Skills live once in `.agents/`. A sync script packages them for Claude Code (`.claude/`) and Copilot (`.github/`), so both builders behave the same.
+
+**Where each skill shows up in the course:**
+
+| Module | Skill / agent / tool |
+|---|---|
+| M1 | `grill` (constitution, threat model) |
+| M2 | `spec-draft` → `grill` → design → tasks |
+| M4 | `acceptance-tdd`, `migration-writer`, `treehouse` |
+| M5 | git hooks, optional `no-mistakes` |
+| M6 | `code-reviewer`, `security-reviewer` |
+| M8 | `test-generator`, `gnhf` |
+| M11 | `backpass` |
+
+## 6. The hats you will wear
 
 The course has one learner, but the standard has six roles. When a module switches roles, you'll see a callout:
 
@@ -71,7 +97,7 @@ The course has one learner, but the standard has six roles. When a module switch
 
 Rule to remember: **the person who prompted an agent can't be the only approver of its PR.** In labs where you are alone, the course shows how a second approver (or a CODEOWNERS rule) fills that gap.
 
-## 6. The product: TicketDesk
+## 7. The product: TicketDesk
 
 - Customers raise support tickets. Support staff work through a queue: they assign tickets, reply and close them.
 - Each priority has an SLA timer. A breach escalates the ticket.

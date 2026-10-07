@@ -1,0 +1,90 @@
+# MCP / tool server allow-list  (standard_version 2.0.0, last verified 2026-10-01)
+#
+# Installed in each repo as .agents/mcp-allowlist.yml.
+# Layering: org defaults (this file, synced from the central standards repo) + optional
+# project additions in .agents/mcp-allowlist.project.yml.
+#
+# Rules (03-AGENT-OPERATING-MODEL.md, 07-SECURITY-STANDARD.md):
+# - Agents may only connect to servers listed here, for the listed environments.
+# - Versions are pinned. Upgrading a version = a PR changing `version`, re-scanned, re-approved.
+# - Every add/change triggers an MCP security scan (tool poisoning, rug-pull, injection in descriptions).
+#   The scan result hash is recorded in `scan.description_hash`; a mismatch at runtime = stop and report.
+# - Only the tools in `tools_allowed` may be invoked. Write-capable tools must be marked.
+# - Additions require Platform/Standards Owner approval. Review at least every 6 months (review_date).
+# - Environments: local (M1/M2 dev container), ci (M3 unattended), never production.
+
+schema_version: 1
+
+servers:
+  - name: playwright
+    purpose: Browser automation for E2E authoring, exploratory testing, UI debugging (QA + developers)
+    source: npm:@playwright/mcp
+    version: "<pinned version, e.g. 0.0.x>"
+    transport: stdio
+    environments: [local, ci]
+    modes: [M1, M2, M3]
+    network_egress: [localhost, "*.preview.<project-domain>", "staging.<project-domain>"]
+    tools_allowed: ["*"]      # read/interact with browser only; no host filesystem write tools
+    write_capable: false
+    data_classification_max: Internal   # never point at production
+    approved_by: <Platform/Standards Owner>
+    approved_on: <YYYY-MM-DD>
+    review_date: <YYYY-MM-DD>
+    scan:
+      tool: <mcp scanner name>
+      last_run: <YYYY-MM-DD>
+      description_hash: <sha256 of tool descriptions at approval>
+
+  - name: library-docs
+    purpose: Up-to-date library/framework documentation lookup (context docs server)
+    source: <package or remote endpoint of the approved docs server>
+    version: "<pinned version>"
+    transport: <stdio | http>
+    environments: [local, ci]
+    modes: [M1, M2, M3]
+    network_egress: [<docs server host>]
+    tools_allowed: [resolve-library-id, query-docs]
+    write_capable: false
+    data_classification_max: Public      # never send project code or data in queries
+    approved_by: <Platform/Standards Owner>
+    approved_on: <YYYY-MM-DD>
+    review_date: <YYYY-MM-DD>
+    scan:
+      tool: <mcp scanner name>
+      last_run: <YYYY-MM-DD>
+      description_hash: <sha256>
+
+  - name: repo-host
+    purpose: Read issues/PRs, create branches and draft PRs on the project repository
+    source: <official repo-host MCP server>
+    version: "<pinned version>"
+    transport: <stdio | http>
+    environments: [local, ci]
+    modes: [M1, M2, M3]
+    network_egress: [<repo host API>]
+    tools_allowed:
+      - get_file_contents
+      - list_issues
+      - issue_read
+      - pull_request_read
+      - create_branch
+      - create_pull_request        # draft only; enforced by token scope + branch rules
+      - add_issue_comment
+    tools_denied: [merge_pull_request, delete_repository, update_pull_request_branch, push_files]
+    write_capable: true
+    credential: short-lived token scoped to this repository; no admin, no merge
+    data_classification_max: Internal
+    approved_by: <Platform/Standards Owner>
+    approved_on: <YYYY-MM-DD>
+    review_date: <YYYY-MM-DD>
+    scan:
+      tool: <mcp scanner name>
+      last_run: <YYYY-MM-DD>
+      description_hash: <sha256>
+
+# Explicitly prohibited categories (never allow-listed):
+prohibited:
+  - Servers with production database or production cloud credentials
+  - Servers that execute arbitrary shell on the host outside the sandbox
+  - Unpinned "latest" versions or servers fetched at runtime from unreviewed sources
+  - Servers whose tool descriptions change without a version change

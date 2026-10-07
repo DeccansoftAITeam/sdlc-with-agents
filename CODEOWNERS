@@ -1,0 +1,7 @@
+# Gate and agent config need the Platform/Standards Owner (org rules §3.4)
+/.agents/                 @DeccansoftAITeam
+/.claude/                 @DeccansoftAITeam
+/.github/                 @DeccansoftAITeam
+/.vscode/settings.json    @DeccansoftAITeam
+/CODEOWNERS               @DeccansoftAITeam
+/docs/constitution.md     @DeccansoftAITeam

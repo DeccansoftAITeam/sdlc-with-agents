@@ -28,10 +28,10 @@ Source of truth: Deccansoft SDLC v2 (`dev-workflow-v2`). That folder is a refere
 
 | # | Module | Phase | You build | Standard slice introduced | Tag |
 |---|---|---|---|---|---|
-| M0 | Setup & the big picture | — | Empty repo, tools, the 1-page SDLC map | README principles, agent modes M1/M2/M3 | `m00-done` |
+| M0 | Setup & the big picture | — | Empty repo, tools, **org agent bundle** (rules, 7 skills/subagents, audit hook, permissions) for both harnesses | Principles, agent modes, 5-layer config | `m00-done` |
 | M1 | Intake & constitution | P0 | `constitution.md`, NFRs/SLOs, ASVS level, AI intake, first threat model, C4 context | `templates/constitution.md`, `threat-model.md` | `m01-done` |
 | M2 | Spec, grill, design, plan | P1 | `spec.md` (EARS) for MVP + TD-007, `design.md`, 2 ADRs, `tasks.md` | spec/design/tasks/adr templates, grilling | `m02-done` |
-| M3 | Scaffold & agent config | P2 | FastAPI + Next.js + Postgres skeleton, `AGENTS.md`, `CLAUDE.md`, `copilot-instructions.md`, settings/hooks, CODEOWNERS | 5-layer agent config, audit hook | `m03-done` |
+| M3 | Scaffold & project agent layer | P2 | FastAPI + Next.js + Postgres skeleton, full project `AGENTS.md` (L2), branch protection | Scaffold templates | `m03-done` |
 | M4 | Implement test-first with agents | P3 | Tickets CRUD + auth: acceptance tests written first, then Claude (M2) and Copilot (M1) build | Agent operating model, forbidden actions, risk tiers | `m04-done` |
 | M5 | Local gate | P4 | pre-commit/pre-push under 90 s: secrets, ruff, mypy, import-linter, affected tests | `05-QUALITY-GATES` LOCAL | `m05-done` |
 | M6 | PR gate & review | P5–P7 | `pr-gate.yml` under 10 min, contract tests, migration lint, agent review pass, human approval, merge queue, preview env | PR layer, review flow, branch rules | `m06-done` |
@@ -48,7 +48,7 @@ Not covered (sidebar only): the mobile path, governance/RFC/waivers, rollout wav
 
 Rule from the standard: agents use only the org-approved set, kept in `.agents/skills/` and pinned. Each skill is packaged once for Claude Code (`.claude/skills/`, `.claude/agents/`) and once for Copilot (`.github/skills/`, `.github/agents/`). Behaviour stays identical; only the packaging differs.
 
-### L4 org skill pack (built in M3, used afterwards)
+### L4 org skill pack (installed in M0, used from M1)
 
 | Skill / subagent | Used in | Based on |
 |---|---|---|
