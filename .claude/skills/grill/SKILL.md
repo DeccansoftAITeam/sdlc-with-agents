@@ -2,7 +2,6 @@
 name: grill
 description: Adversarial design grilling. Interviews the human one question at a time, with a recommended answer and a self-critique each time, until no open questions remain. Use in P0 (constitution, threat model) and P1 (spec, design) before anything is approved, or when the user says "grill me".
 ---
-<!-- GENERATED from .agents/ by scripts/sync_agents.py. Do not edit. -->
 
 # grill (org skill · standard 2.0.0 · P0–P1)
 

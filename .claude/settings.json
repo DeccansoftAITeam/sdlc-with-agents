@@ -62,43 +62,30 @@
       "Edit(./.claude/settings.json)",
       "Edit(./CODEOWNERS)",
       "Edit(./.github/CODEOWNERS)",
-      "Edit(./.claude/agents/**)",
-      "Edit(./.claude/skills/**)",
-      "Edit(./.github/agents/**)",
-      "Edit(./.github/skills/**)",
       "Edit(./.github/hooks/**)",
       "Edit(./.github/copilot-instructions.md)",
       "Edit(./.vscode/settings.json)",
-      "Edit(./docs/constitution.md)"
-    ]
-  },
-  "hooks": {
-    "PreToolUse": [
-      {
-        "matcher": "Bash|Edit|Write|MultiEdit|WebFetch|mcp__.*",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "python .agents/hooks/audit_log.py pre claude"
-          }
-        ]
-      }
-    ],
-    "PostToolUse": [
-      {
-        "matcher": "Bash|Edit|Write|MultiEdit|WebFetch|mcp__.*",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "python .agents/hooks/audit_log.py post claude"
-          }
-        ]
-      }
+      "Edit(./docs/constitution.md)",
+      "Edit(./.claude/skills/**)",
+      "Edit(./.github/agents/**)",
+      "Edit(./skills-lock.json)"
     ]
   },
   "env": {
     "DECCANSOFT_STANDARD_VERSION": "2.0.0",
     "AGENT_MODE": "M1"
   },
-  "includeCoAuthoredBy": false
+  "includeCoAuthoredBy": false,
+  "extraKnownMarketplaces": {
+    "deccansoft": {
+      "source": {
+        "source": "github",
+        "repo": "DeccansoftAITeam/agent-bundle",
+        "ref": "v2.0.0"
+      }
+    }
+  },
+  "enabledPlugins": {
+    "deccansoft-org@deccansoft": true
+  }
 }

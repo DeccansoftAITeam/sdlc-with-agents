@@ -3,7 +3,7 @@ name: security-reviewer
 description: Isolated, read-only security reviewer (ASVS L2, OWASP LLM Top 10). Required on high-risk PRs (auth, migrations, infra, AI prompts) and run weekly on main. Use when a PR touches a high-risk path or the user says "security review".
 tools: ['execute', 'read', 'search']
 ---
-<!-- GENERATED from .agents/ by scripts/sync_agents.py. Do not edit. -->
+<!-- GENERATED from agents/ by scripts/build_copilot.py. Do not edit. -->
 
 # security-reviewer (org subagent · standard 2.0.0 · P6/P8)
 

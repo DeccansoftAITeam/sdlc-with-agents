@@ -45,39 +45,57 @@ gh repo create <you>/sdlc-with-agents --private --clone
 cd sdlc-with-agents
 ```
 
-## 4. Install the org agent bundle (15 min)
+## 4. Install the org agent bundle (20 min)
 
-> 🎩 **Platform Owner hat.** In a real company this bundle is synced from a central standards repo. Here you copy it from the course repo at tag `m00-done`.
+> 🎩 **Platform Owner hat.** The bundle lives in its own repo, [`DeccansoftAITeam/agent-bundle`](https://github.com/DeccansoftAITeam/agent-bundle): the org's central standards repo. Projects install a **pinned version** (`v2.0.0`) and commit the result.
+
+First copy the **project scaffold files** from the course repo. These are guardrails that live in *your* repo and are protected by CODEOWNERS, not by an installer:
 
 ```sh
 git clone --branch m00-done https://github.com/DeccansoftAITeam/sdlc-with-agents ../course-ref
-cp -r ../course-ref/.agents ../course-ref/scripts ../course-ref/docs .
+cp -r ../course-ref/scripts ../course-ref/docs .
 cp ../course-ref/{AGENTS.md,CLAUDE.md,CODEOWNERS,.gitignore,.gitattributes} .
-mkdir -p .claude .github/hooks .vscode
+mkdir -p .claude .github .vscode
 cp ../course-ref/.claude/settings.json .claude/
-cp ../course-ref/.github/hooks/audit.json .github/hooks/
 cp ../course-ref/.github/copilot-instructions.md .github/
 cp ../course-ref/.vscode/settings.json .vscode/
-python scripts/sync_agents.py          # packages skills + agents for both harnesses
-python scripts/sync_agents.py --check  # must print nothing and exit 0
 ```
 
-What you just installed:
+Then install the bundle in three steps, one per delivery channel:
 
-| Layer | File(s) | Claude Code | Copilot |
+```sh
+# 1. Skills for both harnesses → .claude/skills/ and .agents/skills/ + skills-lock.json
+DISABLE_TELEMETRY=1 npx skills add DeccansoftAITeam/agent-bundle#v2.0.0 \
+  --skill '*' -a claude-code -a github-copilot --copy -y
+
+# 2. Org rules, MCP allow-list, Copilot subagents + Copilot audit hook → .agents/bundle.lock
+git clone --depth 1 --branch v2.0.0 https://github.com/DeccansoftAITeam/agent-bundle ../agent-bundle
+python ../agent-bundle/scripts/install.py .
+
+# 3. Claude Code subagents + audit hook: the deccansoft-org plugin.
+#    Nothing to run. .claude/settings.json already registers the marketplace and enables
+#    the plugin, so Claude Code prompts you to install it the first time you open the repo.
+claude      # accept the plugin install prompt, then /exit
+```
+
+What arrived, and from where:
+
+| Piece | Claude Code | GitHub Copilot | Delivered by |
 |---|---|---|---|
-| L1 org rules | `.agents/org/org-rules.md` | imported by `CLAUDE.md` | via `AGENTS.md` + `copilot-instructions.md` |
-| L4 skills | `.agents/skills/*` | `.claude/skills/` | `.github/skills/` |
-| L4 subagents | `.agents/agents/*` | `.claude/agents/` | `.github/agents/*.agent.md` |
-| Audit hook | `.agents/hooks/audit_log.py` | `.claude/settings.json` hooks | `.github/hooks/audit.json` |
-| Permissions | — | `.claude/settings.json` allow/ask/deny | `.vscode/settings.json` terminal auto-approve rules |
-| Protection | `CODEOWNERS` | changes to any of the above need the PSO | same |
-| Templates | `docs/templates/` | used by skills | same |
+| L1 org rules | `.agents/org/org-rules.md` (imported by `CLAUDE.md`) | same file (via `AGENTS.md`) | `install.py` |
+| L4 skills (5) | `.claude/skills/` | `.agents/skills/` | `npx skills` |
+| L4 subagents (2) | plugin `deccansoft-org` | `.github/agents/*.agent.md` | plugin / `install.py` |
+| Audit hook | plugin `hooks/hooks.json` | `.github/hooks/audit.json` → `.agents/hooks/audit_log.py` | plugin / `install.py` |
+| Permissions | `.claude/settings.json` | `.vscode/settings.json` | **project scaffold** (not the bundle) |
+| Version pins | `skills-lock.json`, `.agents/bundle.lock`, plugin `ref` in settings | same | all three |
+
+**Why are permissions not in the bundle?** A gate a developer can uninstall isn't a gate. Deny-lists stay in the repo, behind CODEOWNERS, and conformance checks them (M8).
 
 Check that each harness sees the bundle:
 
-- **Claude Code:** run `claude`, type `/` and confirm `grill`, `spec-draft`, `acceptance-tdd`, `migration-writer` and `test-generator` appear. Run `/agents` and confirm `code-reviewer` and `security-reviewer`.
-- **Copilot:** in Agent mode, type `/` and confirm the same skills appear. In the agent picker, confirm `code-reviewer` and `security-reviewer`.
+- **Claude Code:** `/plugin` shows `deccansoft-org` enabled. Typing `/` lists `grill`, `spec-draft`, `acceptance-tdd`, `migration-writer` and `test-generator`. `/agents` lists `code-reviewer` and `security-reviewer`.
+- **Copilot (Agent mode):** typing `/` lists the same five skills, and the agent picker shows both reviewers.
+- **Drift check:** `python ../agent-bundle/scripts/install.py . --check` exits 0.
 
 ## 5. Your first agent prompt (M1 Pair mode)
 
@@ -116,6 +134,7 @@ git tag m00-done && git push origin m00-done
 - [ ] Repo exists, with `README.md` on `main`
 - [ ] Both harnesses list the 5 skills and 2 reviewer agents
 - [ ] `audit.jsonl` has lines from both harnesses
-- [ ] `python scripts/sync_agents.py --check` exits 0
+- [ ] `skills-lock.json` and `.agents/bundle.lock` are committed, both pinned to `v2.0.0`
+- [ ] `install.py . --check` exits 0
 - [ ] Tag `m00-done` is pushed
 - [ ] You can answer the three "Check yourself" questions in `notes.md`

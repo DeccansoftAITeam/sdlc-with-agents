@@ -2,7 +2,6 @@
 name: acceptance-tdd
 description: Implements one approved tasks.md item acceptance-test-first. Writes API/E2E acceptance tests from the EARS criteria, stops for human review, then implements in red-green vertical slices. Use in P3 for any task in an approved tasks.md, or when the user says "implement T<n>".
 ---
-<!-- GENERATED from .agents/ by scripts/sync_agents.py. Do not edit. -->
 
 # acceptance-tdd (org skill · standard 2.0.0 · P3)
 

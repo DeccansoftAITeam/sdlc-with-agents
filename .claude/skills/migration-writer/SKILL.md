@@ -2,7 +2,6 @@
 name: migration-writer
 description: Writes a safe Alembic migration for PostgreSQL following expand → migrate → contract, with RLS policies for tenant tables and a squawk-clean SQL check. Use whenever a task changes the database schema.
 ---
-<!-- GENERATED from .agents/ by scripts/sync_agents.py. Do not edit. -->
 
 # migration-writer (org skill · standard 2.0.0 · P3, high-risk tier)
 

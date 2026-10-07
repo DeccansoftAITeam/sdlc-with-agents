@@ -1,0 +1,40 @@
+{
+  "version": 1,
+  "skills": {
+    "acceptance-tdd": {
+      "source": "DeccansoftAITeam/agent-bundle",
+      "ref": "v2.0.0",
+      "sourceType": "github",
+      "skillPath": "skills/acceptance-tdd/SKILL.md",
+      "computedHash": "5a7ba98080e7fe93e118b77e7b25c1c5474cea63d69629d4802fce573e063234"
+    },
+    "grill": {
+      "source": "DeccansoftAITeam/agent-bundle",
+      "ref": "v2.0.0",
+      "sourceType": "github",
+      "skillPath": "skills/grill/SKILL.md",
+      "computedHash": "51351a28114190adb3fee32685b465c940f6b03df1a945c58908b04f6ada9525"
+    },
+    "migration-writer": {
+      "source": "DeccansoftAITeam/agent-bundle",
+      "ref": "v2.0.0",
+      "sourceType": "github",
+      "skillPath": "skills/migration-writer/SKILL.md",
+      "computedHash": "5ca3b562d36f6aab358b2e77264995a942460dc50316e55dbb76e6ad1298899d"
+    },
+    "spec-draft": {
+      "source": "DeccansoftAITeam/agent-bundle",
+      "ref": "v2.0.0",
+      "sourceType": "github",
+      "skillPath": "skills/spec-draft/SKILL.md",
+      "computedHash": "bb71832ac472be0624189892a8ecff2959ce217e7e86c2e27acb2fc37f56c4c8"
+    },
+    "test-generator": {
+      "source": "DeccansoftAITeam/agent-bundle",
+      "ref": "v2.0.0",
+      "sourceType": "github",
+      "skillPath": "skills/test-generator/SKILL.md",
+      "computedHash": "570ed58f98a36aba971893e65f7dce19cfc00d17d8570aeeb1cda4a2856d7e19"
+    }
+  }
+}

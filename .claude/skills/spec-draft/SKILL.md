@@ -2,7 +2,6 @@
 name: spec-draft
 description: Drafts a feature spec with user stories and EARS acceptance criteria from a short feature request, using templates/spec.md. Use in P1 when a new feature (e.g. TD-007) needs a spec, or when the user says "draft a spec".
 ---
-<!-- GENERATED from .agents/ by scripts/sync_agents.py. Do not edit. -->
 
 # spec-draft (org skill · standard 2.0.0 · P1)
 

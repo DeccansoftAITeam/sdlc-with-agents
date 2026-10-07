@@ -2,7 +2,6 @@
 name: test-generator
 description: Generates QA-level test scenarios (API scenario tests and Playwright E2E) from specs and the running app, mapped to acceptance criteria, for human QA review. Use in P3/P8 when QA wants more coverage, or when the user says "generate tests for <ID>".
 ---
-<!-- GENERATED from .agents/ by scripts/sync_agents.py. Do not edit. -->
 
 # test-generator (org skill · standard 2.0.0 · QA support)
 

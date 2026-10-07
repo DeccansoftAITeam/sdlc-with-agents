@@ -3,7 +3,7 @@ name: code-reviewer
 description: Isolated, read-only reviewer for a PR or diff. Runs the P6 agent review pass before human review. Use on every PR, after the gates pass and before requesting a code owner.
 tools: ['execute', 'read', 'search']
 ---
-<!-- GENERATED from .agents/ by scripts/sync_agents.py. Do not edit. -->
+<!-- GENERATED from agents/ by scripts/build_copilot.py. Do not edit. -->
 
 # code-reviewer (org subagent · standard 2.0.0 · P6)
 

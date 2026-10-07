@@ -66,7 +66,7 @@ Agents need the rules *before* they touch the repo, so every project starts with
 | L4 Skills + subagents | `grill`, `spec-draft`, `acceptance-tdd`, `migration-writer`, `test-generator`, `code-reviewer`, `security-reviewer` | Platform Owner |
 | L5 Tool allow-list | `.agents/mcp-allowlist.yml` | Platform Owner |
 
-**One source, two packagings.** Skills live once in `.agents/`. A sync script packages them for Claude Code (`.claude/`) and Copilot (`.github/`), so both builders behave the same.
+**One source, three delivery channels.** The bundle lives in its own repo (`DeccansoftAITeam/agent-bundle`) and is released as tags. Projects install a pinned version: **skills** through `npx skills` (one command, both harnesses), **Claude subagents and hooks** through a Claude Code plugin, and **Copilot subagents and hooks, plus the org rules**, through the bundle's installer. Each channel writes a lock file, so conformance can tell whether a repo drifted from its pinned version.
 
 **Where each skill shows up in the course:**
 

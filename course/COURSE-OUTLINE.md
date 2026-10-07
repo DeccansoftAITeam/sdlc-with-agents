@@ -46,7 +46,7 @@ Not covered (sidebar only): the mobile path, governance/RFC/waivers, rollout wav
 
 ## Skills, subagents and tools by module
 
-Rule from the standard: agents use only the org-approved set, kept in `.agents/skills/` and pinned. Each skill is packaged once for Claude Code (`.claude/skills/`, `.claude/agents/`) and once for Copilot (`.github/skills/`, `.github/agents/`). Behaviour stays identical; only the packaging differs.
+Rule from the standard: agents use only the org-approved set. It lives in **[`DeccansoftAITeam/agent-bundle`](https://github.com/DeccansoftAITeam/agent-bundle)** (the central standards repo) and is installed pinned (`#v2.0.0`): skills via `npx skills`, Claude subagents and hooks via the `deccansoft-org` plugin, and Copilot agents and hooks plus the org rules via the bundle installer.
 
 ### L4 org skill pack (installed in M0, used from M1)
 
