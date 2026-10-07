@@ -31,7 +31,7 @@ Source of truth: Deccansoft SDLC v2 (`dev-workflow-v2`). That folder is a refere
 | M0 | Setup & the big picture | — | Empty repo, tools, **org agent bundle** (rules, 7 skills/subagents, audit hook, permissions) for both harnesses | Principles, agent modes, 5-layer config | `m00-done` |
 | M1 | Intake & constitution | P0 | `constitution.md`, NFRs/SLOs, ASVS level, AI intake, first threat model, C4 context | `templates/constitution.md`, `threat-model.md` | `m01-done` |
 | M2 | Spec, grill, design, plan | P1 | `spec.md` (EARS) for MVP + TD-007, `design.md`, 2 ADRs, `tasks.md` | spec/design/tasks/adr templates, grilling | `m02-done` |
-| M3 | Scaffold & project agent layer | P2 | FastAPI + Next.js + Postgres skeleton, full project `AGENTS.md` (L2), branch protection | Scaffold templates | `m03-done` |
+| M3 | Scaffold | P2 | Generate TicketDesk from **`project-scaffold`** (Copier) with the `scaffold` skill: monorepo, RLS tenancy + isolation tests, local gate hooks, PR gate, project `AGENTS.md`; scope-guard hook | Scaffold, `copier update` | `m03-done` |
 | M4 | Implement test-first with agents | P3 | Tickets CRUD + auth: acceptance tests written first, then Claude (M2) and Copilot (M1) build | Agent operating model, forbidden actions, risk tiers | `m04-done` |
 | M5 | Local gate | P4 | pre-commit/pre-push under 90 s: secrets, ruff, mypy, import-linter, affected tests | `05-QUALITY-GATES` LOCAL | `m05-done` |
 | M6 | PR gate & review | P5–P7 | `pr-gate.yml` under 10 min, contract tests, migration lint, agent review pass, human approval, merge queue, preview env | PR layer, review flow, branch rules | `m06-done` |
