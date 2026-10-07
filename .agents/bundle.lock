@@ -1,7 +1,7 @@
 {
   "bundle": "DeccansoftAITeam/agent-bundle",
-  "version": "2.1.1",
-  "commit": "9da35b916b9d31dfd315aaf9a25790ecf1f61828",
+  "version": "2.1.2",
+  "commit": "f60b847bbcc4b315523330db6faa5d4a7b7dcd8c",
   "files": [
     ".agents/org/org-rules.md",
     ".agents/mcp-allowlist.yml",

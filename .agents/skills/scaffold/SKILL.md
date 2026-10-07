@@ -27,7 +27,12 @@ M1 Pair only: a human watches every step, because the scaffold writes gate confi
 
 ## Updating an existing project
 
-`uvx copier update --trust --vcs-ref <new-tag>`. Resolve conflicts by **keeping project changes to project-owned files** and **taking the scaffold's version of gate files**. Open a PR labelled `scaffold-update` that needs Platform/Standards Owner review.
+1. On a branch `chore/scaffold-<new-tag>`: `uvx copier update --trust --defaults --skip-tasks --vcs-ref <new-tag>`.
+   `--skip-tasks` is required: Copier re-renders the *old* version in a temp dir, where post-generation tasks fail.
+2. Resolve conflicts (`*.rej` files or inline markers) by **keeping project changes to project-owned files** and **taking the scaffold's version of gate files**.
+3. Run the post-update steps the tasks would have run: `cd backend && uv lock`, `pnpm install`, and `python scripts/install_agent_bundle.py <ref>` if `agent_bundle_ref` changed.
+4. Run the full local gate (`uvx pre-commit run --hook-stage pre-push --all-files`).
+5. Open a PR labelled `scaffold-update` that needs Platform/Standards Owner review.
 
 ## Rules
 

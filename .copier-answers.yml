@@ -1,7 +1,7 @@
 # Changes here will be overwritten by Copier; NEVER EDIT MANUALLY
 _commit: v1.0.2
 _src_path: gh:DeccansoftAITeam/project-scaffold
-agent_bundle_ref: v2.1.1
+agent_bundle_ref: v2.1.2
 asvs_level: L2
 cloud: azure
 description: Multi-tenant support desk with AI triage and AI-suggested replies
