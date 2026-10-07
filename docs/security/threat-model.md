@@ -2,8 +2,8 @@
 
 | Field | Value |
 |---|---|
-| Version | 1 |
-| Last session | 2026-10-06 |
+| Version | 2 |
+| Last session | 2026-10-07 |
 | Participants | Tech Lead, Developer (agent-drafted, human-reviewed) |
 | Security reviewer | DeccansoftAITeam (rotating TL duty) |
 | ASVS level | L2 |
@@ -57,16 +57,19 @@ flowchart LR
 |---|---|---|---|---|---|---|---|---|
 | TM-001 | U → A | Spoofing | Stolen access or refresh token is reused | M | H | 15-min access tokens; rotating refresh tokens with reuse detection (reuse revokes the whole token family) | Planned | `test_refresh_reuse_revokes_family` |
 | TM-002 | U → A | Spoofing | Credential stuffing on login | H | H | Rate limit + lockout backoff; Argon2id; breached-password check | Planned | `test_login_rate_limit` |
-| TM-003 | A → DB | Elevation | **Cross-tenant read** via a missing filter (IDOR) | M | H | `tenant_id` from JWT only; RLS `USING (tenant_id = current_setting('app.tenant_id'))`; app DB role without BYPASSRLS | Planned | `test_cross_tenant_*` on every endpoint + RLS test |
+| TM-003 | A → DB | Elevation | **Cross-tenant read** via a missing filter (IDOR) or a forged `/t/{slug}` | M | H | `tenant_id` from JWT only; slug/JWT mismatch → 404 (middleware + architecture test); RLS `USING (tenant_id = current_setting('app.tenant_id'))`; app DB role without BYPASSRLS | Planned | `test_cross_tenant_*` on every endpoint + RLS test |
 | TM-004 | A | Elevation | A customer reads other customers' tickets in the same tenant | M | H | Role checks in the service layer: a customer sees only tickets they requested | Planned | `test_customer_ticket_scope` |
 | TM-005 | A | Elevation | Staff escalate themselves to admin | L | H | Role changes need an admin; audited | Planned | `test_role_change_requires_admin` |
 | TM-006 | A → DB | Tampering | SQL injection through queue filters | L | H | ORM only; semgrep rule against raw SQL with user input | Planned | SAST gate |
 | TM-007 | Q | Tampering | SLA clock manipulated (client-supplied timestamps) | L | M | Server-side timestamps only; SLA computed in the worker | Planned | `test_sla_ignores_client_time` |
 | TM-008 | A | Repudiation | Staff deny closing or reassigning a ticket | M | M | Append-only audit log | Planned | `test_audit_on_status_change` |
 | TM-009 | A → logs | Disclosure | Ticket text or emails written to logs/traces | M | H | Structured logging allow-list; redaction filter | Planned | `test_log_redaction` |
-| TM-010 | A | Disclosure | Attachment URL guessable or shared across tenants | M | H | Private blob container; short-lived SAS per request after an authz check | Planned | `test_attachment_authz` |
+| ~~TM-010~~ | — | — | Withdrawn: attachments are a v1 non-goal (grill Q4) | — | — | — | Withdrawn | — |
 | TM-011 | A | DoS | One tenant floods the API (noisy neighbour) | M | M | Per-tenant rate limits; pagination caps | Planned | k6 + Schemathesis |
 | TM-012 | W | Tampering | Stored XSS through ticket messages | M | H | React escaping; no `dangerouslySetInnerHTML`; markdown rendered with a sanitizer; CSP | Planned | E2E XSS payload test |
+| TM-013 | U → A | DoS / cost | Scripted **self-serve signups** create fake tenants to spam or burn AI tokens | H | M | Tenant-creation rate limit per IP; email verification before inviting staff; AI off by default (opt-in); per-tenant AI cap | Planned | `test_signup_rate_limit`, `test_ai_disabled_by_default` |
+| TM-014 | A → mail | Spoofing | Verification or reset link stolen or replayed | M | H | Tokens: 256-bit random, stored hashed, single-use, 30-min expiry; all sessions revoked on reset | Planned | `test_reset_token_single_use_and_expiry` |
+| TM-015 | A | Disclosure | Signup, login or reset responses reveal whether an email exists in a tenant | M | M | Identical responses and timing for known and unknown emails | Planned | `test_no_account_enumeration` |
 
 ## 3. AI threats — OWASP LLM Top 10 (2025)
 
@@ -81,7 +84,7 @@ flowchart LR
 | LLM07 System prompt leakage | Yes | Customer extracts the system prompt | No secrets in prompts; leakage probes | Red-team eval set |
 | LLM08 Vector weaknesses | **Yes** | Tenant A's KB retrieved for tenant B | `tenant_id` filter + RLS on the embeddings table; delete embeddings on article delete | `test_rag_tenant_isolation` |
 | LLM09 Misinformation | Yes | Draft states a wrong policy | Citations required; groundedness threshold; human review | Eval gate |
-| LLM10 Unbounded consumption | Yes | Abuse drives token cost | APIM per-tenant token limit; max tokens; monthly budget alert | Gateway config + k6 |
+| LLM10 Unbounded consumption | **Yes** | Free self-serve tenants drive token cost | APIM `llm-token-limit` 200k tokens/month + 20 req/min keyed on a **server-set** tenant header; APIM accepts only the API's managed identity; max tokens; global budget alert | Gateway policy test + k6 |
 
 ## 4. Agentic threats (our coding agents)
 
@@ -100,12 +103,12 @@ The in-product AI has no tools or memory, so ASI06–ASI09 are N/A for the produ
 
 | Category | Finding | Mitigation |
 |---|---|---|
-| Linking | Tickets across tenants could profile one person | No cross-tenant analytics; no shared identity across tenants |
+| Linking | Tickets across tenants could profile one person | **Identity is per tenant** (`UNIQUE(tenant_id, email)`); no email-first tenant lookup; no cross-tenant analytics |
 | Identifying | AI traces may identify people | Mask before prompt; traces kept 30 days |
 | Non-repudiation | — | Audit log covers staff only, not customers |
 | Detecting | Login error messages reveal whether an email exists | Generic login and reset messages |
 | Data disclosure | Over-collection | Only name + email required |
-| Unawareness | Customers don't know AI is used | AI disclosure in UI and privacy notice |
+| Unawareness | Customers don't know AI is used | AI is opt-in per tenant after an admin disclosure; AI label in the UI; privacy notice |
 | Non-compliance | Deletion must include embeddings + traces | Tenant/user deletion job covers all stores |
 
 ## 6. Action list
@@ -113,7 +116,8 @@ The in-product AI has no tools or memory, so ASI06–ASI09 are N/A for the produ
 | Threat | Action | Owner | Due |
 |---|---|---|---|
 | TM-003 | ADR-0003 multi-tenancy with RLS | TL | M2 |
-| TM-001/002 | ADR-0002 JWT auth design | TL | M2 |
+| TM-001/002/014/015 | ADR-0002 JWT auth design | TL | M2 |
+| TM-013, LLM10 | Signup rate limit (M4); APIM per-tenant policy (M7) | TL + Dev | M4/M7 |
 | LLM01/02/08 | AI feature spec + eval sets | TL + QA | M7 |
 
 ## 7. Did we do a good enough job?
@@ -129,3 +133,4 @@ The in-product AI has no tools or memory, so ASI06–ASI09 are N/A for the produ
 | Date | Version | Change | Participants |
 |---|---|---|---|
 | 2026-10-06 | 1 | Initial (P0) | TL, Dev |
+| 2026-10-07 | 2 | `/grill` Q1–Q9: added TM-013/014/015, withdrew TM-010, hardened TM-003 and LLM10 | TL, PO (agent-led grill) |

@@ -39,7 +39,8 @@ Rule 4 is what makes a threat model more than a document. `TM-003 cross-tenant r
 
 | Step | Agent does | You do |
 |---|---|---|
-| Intake | **Grills you** one question at a time, with a recommended answer | Decide |
+| Intake | `/grill` interviews you one question at a time, with a recommendation and self-check | Decide |
+| Draft review | `/grill` again, on its own draft, hunting contradictions | Decide, then say `apply` |
 | Constitution | Fills the template from your answers | Check every number, then approve |
 | Threat model | Drafts STRIDE + OWASP rows | Challenge it: what did it miss? |
 | C4 | Draws the mermaid diagram | Confirm every arrow |
@@ -54,6 +55,8 @@ The agent **drafts**. Humans **decide** and **approve**. An agent-written consti
 | Login? | Own JWT, no SSO | We own auth code → high-risk tier, ADR-0002 in M2 |
 | SLAs? | P1: 1 h response … P4: 3 business days | SLA engine → feature TD-007 |
 | Sensitivity? | PII in tickets → ASVS L2 | Pen test before launch; masking before LLM |
+
+Then `/grill` on the draft added nine more decisions: self-serve signup, per-tenant identity, `/t/{slug}` routing with the token winning, no attachments, in-app notifications, auth-only email, AI opt-in, and per-tenant AI caps. See `docs/grill-logs/2026-10-07-constitution.md`. Q6 → Q7 is the one to study: a reasonable answer quietly broke two earlier decisions, and the stress-test step caught it.
 
 ## Check yourself
 

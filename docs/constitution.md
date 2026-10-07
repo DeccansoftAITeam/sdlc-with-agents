@@ -9,11 +9,11 @@
 | Release Manager | DeccansoftAITeam |
 | QA Engineer(s) | DeccansoftAITeam |
 | Standard version | 2.0.0 |
-| Last amended | 2026-10-06 |
+| Last amended | 2026-10-07 |
 
 ## 1. Purpose
 
-TicketDesk lets companies (**tenants**) run customer support. Their customers raise tickets, and their support staff work a shared queue against SLA targets. AI suggests a category and priority for each new ticket and drafts replies from the tenant's own help articles. A human decides before anything reaches a customer.
+TicketDesk lets companies (**tenants**) run customer support. Any company can sign up on its own (self-serve); whoever creates the tenant becomes its first admin, and must verify their email before inviting staff. Their customers raise tickets, and their support staff work a shared queue against SLA targets. AI suggests a category and priority for each new ticket and drafts replies from the tenant's own help articles. A human decides before anything reaches a customer.
 
 ## 2. Principles
 
@@ -21,8 +21,9 @@ TicketDesk lets companies (**tenants**) run customer support. Their customers ra
 2. **AI suggests, humans decide.** AI never sends a message to a customer and never closes a ticket. Every AI output is marked as AI-generated and can be edited.
 3. **SLA clocks are trustworthy.** SLA timers are computed on the server from stored timestamps and are never derived from client input.
 4. **Least data in prompts.** Personal data is masked before any LLM call. Prompts and retrieval run in the tenant's scope only.
-5. **Boring auth.** JWT access tokens are short-lived, refresh tokens rotate, and passwords are hashed with Argon2id. No home-grown crypto.
+5. **Boring auth.** JWT access tokens are short-lived, refresh tokens rotate, and passwords are hashed with Argon2id. No home-grown crypto. **Identity is per tenant:** a user is unique on `(tenant_id, email)`, so the same email in two tenants is two separate users. The JWT carries `tenant_id` and `role`.
 6. **Everything observable.** Every request carries `tenant_id` and `trace_id` in telemetry, never PII.
+7. **The tenant comes from the token, never the URL.** Tenants are addressed as `/t/{slug}` for routing. After login, `tenant_id` comes only from the JWT; if the slug and the JWT disagree, the request gets 404. Slugs are unique and immutable, and reserved words are blocked.
 
 ## 3. Non-goals
 
@@ -30,7 +31,10 @@ TicketDesk lets companies (**tenants**) run customer support. Their customers ra
 - Billing or subscription management for tenants (set up manually for now).
 - Mobile apps.
 - SSO / external identity providers (no Entra ID, no OAuth login) in v1.
-- Autonomous AI actions: no auto-reply, auto-close or auto-assign.
+- Autonomous AI actions: no auto-reply, auto-close, auto-assign or automatic priority changes.
+- File attachments (v1).
+- Notification email. SLA-breach and other notifications are in-app only. Email is used **only** for account verification and password reset.
+- Subdomain or custom domain per tenant.
 
 ## 4. Stack & deviations
 
@@ -43,13 +47,14 @@ TicketDesk lets companies (**tenants**) run customer support. Their customers ra
 | Cloud target | Cloud-neutral, Azure default | Azure Container Apps, East US 2 | — |
 | LLM provider | via LiteLLM gateway | Azure OpenAI (Foundry) `gpt-4.1-mini`, `text-embedding-3-small` via **Azure APIM AI gateway** | ADR-0001 (M2) |
 | Auth | — | Self-issued JWT (access 15 min, rotating refresh 7 days) | ADR-0002 (M2) |
-| Multi-tenancy | — | Shared DB, `tenant_id` on every row + Postgres RLS | ADR-0003 (M2) |
+| Multi-tenancy | — | Shared DB, `tenant_id` on every row + Postgres RLS; path-slug routing `/t/{slug}` | ADR-0003 (M2) |
+| Email | — | Azure Communication Services Email, auth messages only (verify, reset) | — |
 
 ## 5. Data sensitivity
 
 | Data category | Examples | Classification | Personal data? | Regulated? |
 |---|---|---|---|---|
-| Tenant account | Company name, plan | Internal | N | — |
+| Tenant account | Company name, slug, AI opt-in flags | Internal | N | — |
 | User identity | Name, email, password hash | Confidential | Y | GDPR (EU end-customers possible) |
 | Ticket content | Subject, messages, attachments | Confidential | Y (free text may include anything) | GDPR |
 | Help articles (KB) | Tenant-authored articles + embeddings | Internal (per tenant) | N | — |
@@ -91,7 +96,7 @@ TicketDesk lets companies (**tenants**) run customer support. Their customers ra
 | API availability | non-5xx / all responses | 99.5% |
 | API latency | requests < 300 ms / all | 95% |
 | SLA timer accuracy | escalations fired within 60 s of breach / all breaches | 99.9% |
-| AI triage acceptance | triage suggestions not overridden / all triaged tickets | 80% |
+| AI triage acceptance | triage suggestions not overridden / all triaged tickets (counts only when there are at least 200 triaged tickets in the window) | 80% |
 | AI guardrail-trip rate | blocked AI requests / all AI requests | < 2% |
 
 **Product SLA targets (what tenants promise their customers):**
@@ -131,18 +136,21 @@ Error-budget policy: when a budget is exhausted, feature work pauses until it re
 
 | Feature | Purpose | Risk tier | EU AI Act | Data | HITL point | Budget / month |
 |---|---|---|---|---|---|---|
-| AI triage | Suggest category + priority on new tickets | Medium | Limited (transparency) | Confidential, masked | Support staff can override; override is logged | $20 |
-| AI suggested reply | Draft a reply from the tenant's KB (RAG) with citations | Medium | Limited (transparency) | Confidential, masked | Staff must edit or accept before sending | $40 |
+| AI triage | Suggest category + priority on new tickets | Medium | Limited (transparency) | Confidential, masked | **Tenant opt-in** (admin, after disclosure); staff can override; override is logged | $20 |
+| AI suggested reply | Draft a reply from the tenant's KB (RAG) with citations | Medium | Limited (transparency) | Confidential, masked | **Tenant opt-in**; staff must edit or accept before sending | $40 |
+
+**Per-tenant AI limits (enforced by the APIM gateway):** 200k tokens per calendar month and 20 AI requests per minute. When the cap is reached, AI turns off for that tenant until the 1st of the next month, and the UI says so. The API calls APIM with its managed identity and sets the tenant header on the server side; APIM accepts no other caller.
 
 ## 13. Approval
 
 | Role | Name | Date |
 |---|---|---|
-| Tech Lead | DeccansoftAITeam | 2026-10-06 |
-| Product Owner | DeccansoftAITeam | 2026-10-06 |
+| Tech Lead | DeccansoftAITeam | 2026-10-07 |
+| Product Owner | DeccansoftAITeam | 2026-10-07 |
 
 ## Amendment log
 
 | Date | Change | PR |
 |---|---|---|
 | 2026-10-06 | Initial | M1 |
+| 2026-10-07 | Grilled (Q1–Q9): self-serve signup, per-tenant identity, slug routing, no attachments, in-app notifications, auth-only email, AI opt-in, per-tenant AI caps | M1 |
