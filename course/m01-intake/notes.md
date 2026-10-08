@@ -56,7 +56,7 @@ The agent **drafts**. Humans **decide** and **approve**. An agent-written consti
 | SLAs? | P1: 1 h response … P4: 3 business days | SLA engine → feature TD-007 |
 | Sensitivity? | PII in tickets → ASVS L2 | Pen test before launch; masking before LLM |
 
-Then `/grill` on the draft added nine more decisions: self-serve signup, per-tenant identity, `/t/{slug}` routing with the token winning, no attachments, in-app notifications, auth-only email, AI opt-in, and per-tenant AI caps. See `docs/grill-logs/2026-10-07-constitution.md`. Q6 → Q7 is the one to study: a reasonable answer quietly broke two earlier decisions, and the stress-test step caught it.
+Then `/grill` on the draft added nine more decisions: self-serve signup, per-tenant identity, `/t/{slug}` routing with the token winning, no attachments, in-app notifications, auth-only email (later dropped entirely: see the 2026-10-08 amendment), AI opt-in, and per-tenant AI caps. See `docs/grill-logs/2026-10-07-constitution.md`. Q6 → Q7 is the one to study: a reasonable answer quietly broke two earlier decisions, and the stress-test step caught it.
 
 ## Check yourself
 

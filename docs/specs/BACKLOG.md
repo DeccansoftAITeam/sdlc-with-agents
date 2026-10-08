@@ -4,8 +4,8 @@ The Product Owner owns this list. Each feature gets its own `docs/specs/<ID>-<sl
 
 | ID | Feature | Risk tier | Depends on | Built in |
 |---|---|---|---|---|
-| TD-001 | Tenant signup, login, JWT refresh, email verification, password reset | **High** (auth) | — | M4 |
-| TD-002 | Staff invites and roles (admin, staff); customer self-registration | **High** (authz) | TD-001 | M4 |
+| TD-001 | Tenant signup, login, JWT refresh, sessions (no email) | **High** (auth) | — | M4 |
+| TD-002 | Roles; admin-issued invite and reset links (copy and share); customer self-registration | **High** (authz) | TD-001 | M4 |
 | TD-003 | Tickets: create, list (queue), view, with customer/staff visibility rules | Medium | TD-002 | M4 |
 | TD-004 | Ticket workflow: assign, reply, internal note, status changes, audit log | Medium | TD-003 | M4 |
 | TD-005 | SLA policies per priority and SLA clocks (first response, resolution) | Medium | TD-004 | M4 |

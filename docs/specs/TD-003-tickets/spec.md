@@ -12,7 +12,7 @@
 
 | ID | Criterion | Layer |
 |---|---|---|
-| TD-003/AC-1 | When a verified customer submits a subject (1–200 chars) and body (1–10,000 chars), the system shall create a ticket with status `new`, priority `P3`, the customer as requester, and the next per-tenant ticket number (`#1`, `#2`, …). | API |
+| TD-003/AC-1 | When a customer submits a subject (1–200 chars) and body (1–10,000 chars), the system shall create a ticket with status `new`, priority `P3`, the customer as requester, and the next per-tenant ticket number (`#1`, `#2`, …). | API |
 | TD-003/AC-2 | When staff create a ticket on behalf of a customer, the system shall allow setting priority and category. | API |
 | TD-003/AC-3 | The system shall let customers set neither priority nor category. | API |
 | TD-003/AC-4 | When staff request the queue, the system shall return the tenant's tickets, newest first, cursor-paginated, max 100 per page, filterable by status, priority, assignee. | API |
