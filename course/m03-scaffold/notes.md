@@ -1,5 +1,7 @@
 # M3 — Scaffold (P2)
 
+> **Background:** [Start here → 5. The project scaffold](../start-here/05-project-scaffold.md) tours every tool in the template and explains why it's there.
+
 **Goal:** generate a repo where every practice already works on day one, so the first line of agent code lands inside the guardrails.
 
 > 🎩 **Tech Lead** drives; the agent runs the `scaffold` skill in **M1 Pair** mode, because the scaffold writes gate configs.
