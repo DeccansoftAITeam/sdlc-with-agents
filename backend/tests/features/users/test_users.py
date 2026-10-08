@@ -214,7 +214,11 @@ async def test_td002_ac7_role_change_is_audited_and_revokes_sessions(client: htt
     )
     assert refreshed.status_code == 401  # old session gone; Sam logs in again with the new role
     async with tenant_session(await _tenant_id(slug)) as s:
-        row = (await s.execute(text("SELECT action, entity_id, data FROM audit_log"))).one()
+        row = (
+            await s.execute(
+                text("SELECT action, entity_id, data FROM audit_log WHERE action = 'user.role_changed'")
+            )
+        ).one()
     assert row.action == "user.role_changed" and str(row.entity_id) == sam
     assert row.data == {"from": "staff", "to": "admin"}
 
@@ -228,8 +232,8 @@ async def test_td002_ac7_deactivation_is_audited_and_blocks_login(client: httpx.
     assert r.status_code == 200 and r.json()["is_active"] is False
     assert (await _login(client, slug, "sam@example.com", STAFF_PASSWORD)).status_code == 401
     async with tenant_session(await _tenant_id(slug)) as s:
-        actions = (await s.execute(text("SELECT action FROM audit_log"))).scalars().all()
-    assert actions == ["user.deactivated"]
+        actions = (await s.execute(text("SELECT action FROM audit_log ORDER BY created_at"))).scalars().all()
+    assert actions == ["user.created", "user.deactivated"]  # creation is audited too
 
 
 async def test_td002_ac7_audit_log_is_append_only() -> None:
