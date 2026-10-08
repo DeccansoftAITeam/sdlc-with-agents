@@ -39,6 +39,16 @@ async def app_engine() -> AsyncIterator[AsyncEngine]:
     await engine.dispose()
 
 
+@pytest.fixture(autouse=True)
+def _reset_rate_limits() -> None:
+    """Rate-limit state is process-wide; every test starts with a clean slate."""
+    try:
+        from app.core import ratelimit
+    except ImportError:  # before T-001-03 exists
+        return
+    ratelimit.reset()
+
+
 @pytest.fixture
 def app() -> FastAPI:
     return create_app()
