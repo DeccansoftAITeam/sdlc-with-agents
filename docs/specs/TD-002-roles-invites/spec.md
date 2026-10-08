@@ -1,4 +1,4 @@
-# TD-002: Staff invites, roles, customer self-registration
+# TD-002: Roles, admin-created accounts, customer self-registration
 
 | Field | Value |
 |---|---|
@@ -12,7 +12,7 @@
 
 | Role | Can |
 |---|---|
-| `admin` | Everything in their tenant: invite and remove staff, change roles, SLA settings, AI opt-in, KB |
+| `admin` | Everything in their tenant: create and deactivate staff accounts, change roles, SLA settings, AI opt-in, KB |
 | `staff` | Work the queue: view all tickets, assign, reply, notes, change status and priority |
 | `customer` | Create tickets; see and reply to **only their own** tickets |
 
@@ -28,8 +28,8 @@
 | TD-002/AC-6 | If a change would leave the tenant with zero active admins, then the system shall reject it. | API |
 | TD-002/AC-7 | When an admin changes a user's role or deactivates them, the system shall write an audit entry and revoke the user's refresh tokens. | API |
 | TD-002/AC-9 | ~~When an admin requests a password reset for a user, the system shall return a single-use reset link valid for 30 minutes, shown to the admin to share, and invalidate any earlier live reset link.~~ **Deferred to v2** (2026-10-08) | — |
-| TD-002/AC-10 | When an admin creates a `staff` or `admin` account with a name, email and initial password, the system shall create the user ready to log in. (Replaces invite links in v1.) | API |
 | TD-002/AC-8 | The system shall never return users of another tenant from any endpoint. | API (cross-tenant) |
+| TD-002/AC-10 | When an admin creates a `staff` or `admin` account with a name, email and initial password, the system shall create the user ready to log in. (Replaces invite links in v1.) | API |
 
 ## Out of scope
 

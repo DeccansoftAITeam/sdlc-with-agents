@@ -24,6 +24,8 @@ from app.core.errors import ProblemError
 
 ACCESS_TTL_SECONDS = 900
 ALGORITHM = "EdDSA"
+ISSUER = "ticketdesk"
+AUDIENCE = "ticketdesk-api"  # this key signs access tokens for this API only
 UNAUTHENTICATED = ProblemError(401, "Unauthorized", "Missing, invalid or expired access token.")
 NOT_FOUND = ProblemError(404, "Not Found")
 
@@ -36,10 +38,16 @@ def _signing_key() -> Ed25519PrivateKey:
         if not isinstance(key, Ed25519PrivateKey):
             raise RuntimeError("jwt_private_key_pem must be an Ed25519 key")
         return key
-    if settings.environment == "local":
-        # Ephemeral: tokens stop validating on restart. Never used outside local.
+    if settings.jwt_ephemeral_key and settings.environment == "local":
+        # In-memory key: tokens stop validating on restart. Requires BOTH an explicit
+        # opt-in and environment=local, so a misconfigured deployment can't fall into it.
         return Ed25519PrivateKey.generate()
-    raise RuntimeError("jwt_private_key_pem is required outside environment=local")
+    raise RuntimeError("Set JWT_PRIVATE_KEY_PEM (or JWT_EPHEMERAL_KEY=true with ENVIRONMENT=local)")
+
+
+def check_signing_key() -> None:
+    """Called at startup: fail fast instead of on the first login."""
+    _signing_key()
 
 
 @dataclass(frozen=True)
@@ -52,6 +60,8 @@ class Principal:
 def issue_access_token(user_id: uuid.UUID, tenant_id: uuid.UUID, role: str) -> str:
     now = datetime.now(UTC)
     claims = {
+        "iss": ISSUER,
+        "aud": AUDIENCE,
         "sub": str(user_id),
         "tid": str(tenant_id),
         "role": role,
@@ -68,7 +78,9 @@ def decode_access_token(token: str) -> Principal:
             token,
             _signing_key().public_key(),
             algorithms=[ALGORITHM],
-            options={"require": ["sub", "tid", "role", "jti", "iat", "exp"]},
+            issuer=ISSUER,
+            audience=AUDIENCE,
+            options={"require": ["iss", "aud", "sub", "tid", "role", "jti", "iat", "exp"]},
         )
         return Principal(uuid.UUID(claims["sub"]), uuid.UUID(claims["tid"]), str(claims["role"]))
     except (jwt.PyJWTError, ValueError, KeyError):

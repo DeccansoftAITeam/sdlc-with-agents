@@ -4,10 +4,14 @@ The schema is migrated once per session as the OWNER role; tests then talk to
 the database as the APP role, exactly like production, so RLS is really enforced.
 """
 
+import os
 import subprocess
 import sys
 from collections.abc import AsyncIterator
 from pathlib import Path
+
+# Must be set before the app is imported: the app checks its signing key at startup.
+os.environ.setdefault("JWT_EPHEMERAL_KEY", "true")  # tests sign with an in-memory key
 
 import httpx
 import pytest

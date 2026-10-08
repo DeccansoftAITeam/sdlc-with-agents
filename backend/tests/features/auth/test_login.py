@@ -133,7 +133,9 @@ async def test_td001_ac7_wrong_password_and_unknown_email_look_identical(client:
 async def test_td001_ac7_unknown_email_still_runs_a_password_hash(
     client: httpx.AsyncClient, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Timing: the unknown-email path must do the same expensive work (dummy hash)."""
+    """Timing proxy: we assert the unknown-email path does the same expensive work (one Argon2
+    verification against a dummy hash) rather than measuring wall-clock time, which is flaky.
+    An unknown *tenant slug* returns 404 before any hash; slugs are public, so that is fine."""
     from app.features.auth import sessions
 
     calls: list[str] = []
@@ -292,3 +294,66 @@ def test_access_token_lifetime_constant() -> None:
     from app.core.security import ACCESS_TTL_SECONDS
 
     assert ACCESS_TTL_SECONDS == 900
+
+
+async def test_td001_ac8_failed_signups_do_not_count(client: httpx.AsyncClient) -> None:
+    """Review finding: three typos must not lock a real user out of signing up for an hour."""
+    for _ in range(3):
+        r = await client.post(
+            "/signup",
+            json={
+                "company_name": "X",
+                "slug": f"x-{uuid.uuid4().hex[:8]}",
+                "admin_name": "X",
+                "email": "x@example.com",
+                "password": "short",
+            },
+        )
+        assert r.status_code == 422
+    await _tenant(client)  # the real attempt still succeeds
+
+
+async def test_td001_ac6_concurrent_refresh_with_same_token_revokes_family(client: httpx.AsyncClient) -> None:
+    """Review finding: two refreshes racing with one token are serialised (FOR UPDATE). At most
+    one succeeds; the other looks like reuse and revokes the family. Trade-off: two browser tabs
+    refreshing at the same instant log the user out (recorded in the progress decisions)."""
+    import asyncio
+
+    slug = await _tenant(client)
+    token = _refresh_cookie(await _login(client, slug))["refresh_token"].value
+    results = await asyncio.gather(*(_refresh(client, slug, token) for _ in range(2)))
+    assert sorted(r.status_code for r in results) in ([200, 401], [401, 401])
+    for r in results:
+        if r.status_code == 200:  # the winner's new token died with the family
+            assert (
+                await _refresh(client, slug, _refresh_cookie(r)["refresh_token"].value)
+            ).status_code == 401
+
+
+async def test_td001_bad_signing_key_config_fails_fast(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Security finding: outside local, a missing key is a startup error, never an ephemeral key."""
+    from app.core import security
+    from app.core.config import get_settings
+
+    monkeypatch.setenv("ENVIRONMENT", "staging")
+    get_settings.cache_clear()
+    security._signing_key.cache_clear()
+    try:
+        with pytest.raises(RuntimeError, match="JWT_PRIVATE_KEY_PEM"):
+            security.check_signing_key()
+    finally:
+        monkeypatch.delenv("ENVIRONMENT")
+        get_settings.cache_clear()
+        security._signing_key.cache_clear()
+
+
+def test_rate_limit_buckets_are_bounded_and_pruned(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Security finding: unique keys must not grow memory without bound."""
+    from app.core import ratelimit
+
+    monkeypatch.setattr(ratelimit, "MAX_KEYS", 10)
+    for i in range(50):
+        ratelimit.hit(f"k{i}", 5, 60)
+    assert len(ratelimit._buckets) <= 10
+    ratelimit.forget_last("k49")
+    assert "k49" not in ratelimit._buckets

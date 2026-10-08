@@ -31,7 +31,8 @@ SIGNUPS_PER_IP = (3, 3600.0)  # 3 signups per IP per hour (TD-001/AC-8, TM-013)
 
 
 async def signup(data: SignupIn, ip: str) -> str:
-    ratelimit.hit(f"signup-ip:{ip}", *SIGNUPS_PER_IP)
+    signup_key = f"signup-ip:{ip}"
+    ratelimit.check(signup_key, *SIGNUPS_PER_IP)  # only successful signups count (AC-8)
     if data.slug in RESERVED_SLUGS:
         raise ProblemError(422, "Slug not available", "This address is reserved.")
     enforce_policy(data.password)
@@ -63,4 +64,5 @@ async def signup(data: SignupIn, ip: str) -> str:
         if _constraint(exc) == SLUG_UNIQUE:
             raise ProblemError(409, "Slug not available", "Choose another address.") from None
         raise
+    ratelimit.record(signup_key, SIGNUPS_PER_IP[1])
     return data.slug

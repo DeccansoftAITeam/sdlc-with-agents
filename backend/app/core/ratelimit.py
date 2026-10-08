@@ -16,6 +16,7 @@ from fastapi.responses import JSONResponse
 from app.core.errors import problem
 
 _buckets: dict[str, deque[float]] = {}
+MAX_KEYS = 100_000  # bound memory: oldest keys are evicted first (dicts keep insertion order)
 _lock = threading.Lock()
 
 
@@ -25,10 +26,20 @@ class RateLimited(Exception):
 
 
 def _window(key: str, window_s: float, now: float) -> deque[float]:
-    q = _buckets.setdefault(key, deque())
+    q = _buckets.get(key)
+    if q is None:
+        while len(_buckets) >= MAX_KEYS:
+            del _buckets[next(iter(_buckets))]
+        q = _buckets[key] = deque()
     while q and q[0] <= now - window_s:
         q.popleft()
     return q
+
+
+def _prune(key: str) -> None:
+    q = _buckets.get(key)
+    if q is not None and not q:
+        del _buckets[key]
 
 
 def check(key: str, limit: int, window_s: float) -> None:
@@ -38,6 +49,7 @@ def check(key: str, limit: int, window_s: float) -> None:
         q = _window(key, window_s, now)
         if len(q) >= limit:
             raise RateLimited(q[0] + window_s - now)
+        _prune(key)
 
 
 def record(key: str, window_s: float) -> None:
@@ -47,9 +59,22 @@ def record(key: str, window_s: float) -> None:
 
 
 def hit(key: str, limit: int, window_s: float) -> None:
-    """Count this event, refusing it if the limit is already reached."""
-    check(key, limit, window_s)
-    record(key, window_s)
+    """Count this event atomically, refusing it if the limit is already reached."""
+    now = time.monotonic()
+    with _lock:
+        q = _window(key, window_s, now)
+        if len(q) >= limit:
+            raise RateLimited(q[0] + window_s - now)
+        q.append(now)
+
+
+def forget_last(key: str) -> None:
+    """Undo the most recent hit (e.g. a login attempt that turned out to succeed)."""
+    with _lock:
+        q = _buckets.get(key)
+        if q:
+            q.pop()
+        _prune(key)
 
 
 def reset() -> None:

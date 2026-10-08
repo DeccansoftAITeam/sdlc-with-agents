@@ -62,7 +62,9 @@ async def _new_refresh(s: AsyncSession, tenant_id: uuid.UUID, user_id: uuid.UUID
 async def login(slug: str, email: str, password: str, ip: str) -> Tokens:
     ratelimit.hit(f"login-ip:{ip}", *LOGIN_ATTEMPTS_PER_IP)
     fail_key = f"login-fail:{slug}:{email}"
-    ratelimit.check(fail_key, *LOGIN_FAILURES_PER_EMAIL)
+    # Count the attempt BEFORE the slow password check, so parallel requests can't all
+    # slip under the limit; undone below if the login succeeds.
+    ratelimit.hit(fail_key, *LOGIN_FAILURES_PER_EMAIL)
     tid = await resolve_tenant(slug)
     tokens: Tokens | None = None
     async with tenant_session(tid) as s:
@@ -72,8 +74,8 @@ async def login(slug: str, email: str, password: str, ip: str) -> Tokens:
             refresh = await _new_refresh(s, tid, user.id, uuid.uuid4())
             tokens = Tokens(issue_access_token(user.id, tid, user.role), refresh)
     if tokens is None:
-        ratelimit.record(fail_key, LOGIN_FAILURES_PER_EMAIL[1])
         raise INVALID_CREDENTIALS
+    ratelimit.forget_last(fail_key)
     return tokens
 
 
