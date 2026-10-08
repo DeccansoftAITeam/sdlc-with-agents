@@ -1,16 +1,16 @@
 # Gate and agent config need the Platform/Standards Owner (org rules §3.4).
-* @DeccansoftAITeam
-/.agents/                    @DeccansoftAITeam
-/.claude/                    @DeccansoftAITeam
-/.github/                    @DeccansoftAITeam
-/.vscode/settings.json       @DeccansoftAITeam
-/.pre-commit-config.yaml     @DeccansoftAITeam
-/.copier-answers.yml         @DeccansoftAITeam
-/skills-lock.json            @DeccansoftAITeam
-/CODEOWNERS                  @DeccansoftAITeam
-/docs/constitution.md        @DeccansoftAITeam
+* @DeccansoftAITeam @suresh-deccansoft
+/.agents/                    @DeccansoftAITeam @suresh-deccansoft
+/.claude/                    @DeccansoftAITeam @suresh-deccansoft
+/.github/                    @DeccansoftAITeam @suresh-deccansoft
+/.vscode/settings.json       @DeccansoftAITeam @suresh-deccansoft
+/.pre-commit-config.yaml     @DeccansoftAITeam @suresh-deccansoft
+/.copier-answers.yml         @DeccansoftAITeam @suresh-deccansoft
+/skills-lock.json            @DeccansoftAITeam @suresh-deccansoft
+/CODEOWNERS                  @DeccansoftAITeam @suresh-deccansoft
+/docs/constitution.md        @DeccansoftAITeam @suresh-deccansoft
 # High-risk paths: 2 approvals incl. Tech Lead (enforced by ruleset + this file)
-/backend/migrations/         @DeccansoftAITeam
-/backend/app/features/auth/  @DeccansoftAITeam
-/backend/app/core/db.py      @DeccansoftAITeam
-/infra/                      @DeccansoftAITeam
+/backend/migrations/         @DeccansoftAITeam @suresh-deccansoft
+/backend/app/features/auth/  @DeccansoftAITeam @suresh-deccansoft
+/backend/app/core/db.py      @DeccansoftAITeam @suresh-deccansoft
+/infra/                      @DeccansoftAITeam @suresh-deccansoft
