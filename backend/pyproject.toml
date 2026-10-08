@@ -16,7 +16,6 @@ dependencies = [
   "pgvector>=0.3",
   "argon2-cffi>=25.1.0",
   "email-validator>=2.3.0",
-  "httpx>=0.28.1",
 ]
 
 [dependency-groups]
@@ -28,6 +27,7 @@ dev = [
   "hypothesis>=6.120",
   "mypy>=1.13",
   "ruff>=0.8",
+  "httpx>=0.28",
 ]
 
 [tool.ruff]

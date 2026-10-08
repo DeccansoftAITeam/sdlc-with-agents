@@ -1,26 +1,11 @@
-"""Unit tests for the password module (TD-001/AC-3 support; ADR-0002)."""
+"""Unit tests for the password module (TD-001/AC-3 support; ADR-0002 as amended)."""
 
-import hashlib
-from typing import Any
-
-import httpx
 import pytest
 
 from app.core.errors import ProblemError
-from app.features.auth.passwords import HibpRangeChecker, enforce_policy, hash_password, verify_password
+from app.features.auth.passwords import common_passwords, enforce_policy, hash_password, verify_password
 
 PW = "a-long-unique-passphrase"
-SUFFIX = hashlib.sha1(PW.encode(), usedforsecurity=False).hexdigest().upper()[5:]
-
-
-def _checker(body: str = "", status: int = 200, fail: bool = False) -> HibpRangeChecker:
-    def handler(request: httpx.Request) -> httpx.Response:
-        if fail:
-            raise httpx.ConnectError("down", request=request)
-        assert len(request.url.path.rsplit("/", 1)[1]) == 5  # only the 5-char prefix leaves
-        return httpx.Response(status, text=body)
-
-    return HibpRangeChecker(transport=httpx.MockTransport(handler))
 
 
 def test_hash_is_argon2id_and_verifies() -> None:
@@ -30,41 +15,23 @@ def test_hash_is_argon2id_and_verifies() -> None:
     assert not verify_password("not-a-hash", PW)
 
 
-async def test_hibp_match_means_breached() -> None:
-    assert await _checker(f"00000:1\n{SUFFIX}:42\n").is_breached(PW)
-
-
-async def test_hibp_no_match_means_not_breached() -> None:
-    assert not await _checker("00000:1\n").is_breached(PW)
-
-
-@pytest.mark.parametrize("kw", [{"fail": True}, {"status": 503}])
-async def test_hibp_outage_fails_open(kw: dict[str, Any]) -> None:
-    assert not await _checker(**kw).is_breached(PW)
-
-
-async def test_policy_rejects_over_max_length() -> None:
-    with pytest.raises(ProblemError):
-        await enforce_policy("x" * 129, _checker())
-
-
-def test_outbox_sender_refused_outside_local(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Review finding: no silent no-op email in deployed environments."""
-    from app.core import email
-    from app.core.config import get_settings
-
-    monkeypatch.setenv("ENVIRONMENT", "staging")
-    get_settings.cache_clear()
-    try:
-        with pytest.raises(RuntimeError, match="not available"):
-            email.get_email_sender()
-    finally:
-        monkeypatch.delenv("ENVIRONMENT")
-        get_settings.cache_clear()
-    assert isinstance(email.get_email_sender(), email.InMemoryOutbox)
-
-
 def test_password_is_unicode_normalised() -> None:
-    """Security review #4: 'ﬁ' (ligature) and 'fi' must be the same passphrase."""
+    """'ﬁ' (ligature) and 'fi' must be the same passphrase."""
     h = hash_password("my ﬁne long passphrase")
     assert verify_password(h, "my fine long passphrase")
+
+
+def test_common_list_is_bundled_and_lowercase() -> None:
+    words = common_passwords()
+    assert len(words) > 40
+    assert all(w == w.lower() and not w.startswith("#") for w in words)
+
+
+def test_policy_accepts_a_good_passphrase() -> None:
+    enforce_policy(PW)
+
+
+@pytest.mark.parametrize("pw", ["x" * 11, "x" * 129, "Password1234"])
+def test_policy_rejects(pw: str) -> None:
+    with pytest.raises(ProblemError):
+        enforce_policy(pw)

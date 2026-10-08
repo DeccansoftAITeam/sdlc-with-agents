@@ -1,32 +1,29 @@
-"""Password hashing and policy (ADR-0002, ASVS L2 V2.1, TD-001/AC-3).
+"""Password hashing and policy (ADR-0002 as amended 2026-10-08, ASVS L2 V2.1, TD-001/AC-3).
 
-- Argon2id via argon2-cffi defaults (RFC 9106 profile).
-- Minimum 12 characters, maximum 128; no composition rules (they lower real security).
-- Breached-password check through the HIBP k-anonymity range API: only the first five
-  hex characters of the SHA-1 hash leave the process. Fails open (with a log line) so an
-  outage of a third party can't block signup.
+- Argon2id via argon2-cffi defaults (RFC 9106 profile); NFKC-normalised first.
+- 12 to 128 characters; no composition rules (they lower real security).
+- Rejected if it appears in the bundled common-password list (offline: the app calls no
+  third-party services except the AI gateway).
 """
 
-import hashlib
-import logging
 import unicodedata
-from typing import Protocol
+from functools import lru_cache
+from pathlib import Path
 
-import httpx
 from argon2 import PasswordHasher
 from argon2.exceptions import InvalidHashError, VerificationError
 
 from app.core.errors import ProblemError
 
-log = logging.getLogger(__name__)
 _hasher = PasswordHasher()
+_COMMON_FILE = Path(__file__).with_name("common_passwords.txt")
 
 MIN_LENGTH = 12
 MAX_LENGTH = 128
 
 
 def normalise(password: str) -> str:
-    """NFKC, so the same passphrase typed on different keyboards hashes the same (ASVS V2.1)."""
+    """NFKC, so the same passphrase typed on different keyboards hashes the same."""
     return unicodedata.normalize("NFKC", password)
 
 
@@ -41,41 +38,15 @@ def verify_password(password_hash: str, password: str) -> bool:
         return False
 
 
-class BreachedPasswordChecker(Protocol):
-    async def is_breached(self, password: str) -> bool: ...
+@lru_cache
+def common_passwords() -> frozenset[str]:
+    lines = _COMMON_FILE.read_text(encoding="utf-8").splitlines()
+    return frozenset(x.strip().lower() for x in lines if x.strip() and not x.startswith("#"))
 
 
-class HibpRangeChecker:
-    URL = "https://api.pwnedpasswords.com/range/{prefix}"
-
-    def __init__(self, transport: httpx.AsyncBaseTransport | None = None) -> None:
-        self._transport = transport  # injectable for tests; never hit the network in CI
-
-    async def is_breached(self, password: str) -> bool:
-        digest = hashlib.sha1(password.encode(), usedforsecurity=False).hexdigest().upper()
-        prefix, suffix = digest[:5], digest[5:]
-        try:
-            async with httpx.AsyncClient(timeout=2.0, transport=self._transport) as client:
-                r = await client.get(self.URL.format(prefix=prefix), headers={"Add-Padding": "true"})
-                r.raise_for_status()
-        except httpx.HTTPError:
-            log.warning(
-                "breached-password check unavailable; failing open",
-                extra={"security_event": "breach_check_unavailable"},  # alert on this in M11
-            )
-            return False
-        return any(line.split(":", 1)[0] == suffix for line in r.text.splitlines())
-
-
-def get_breach_checker() -> BreachedPasswordChecker:
-    return HibpRangeChecker()
-
-
-async def enforce_policy(password: str, checker: BreachedPasswordChecker) -> None:
+def enforce_policy(password: str) -> None:
     password = normalise(password)
     if not MIN_LENGTH <= len(password) <= MAX_LENGTH:
         raise ProblemError(422, "Weak password", f"Use {MIN_LENGTH} to {MAX_LENGTH} characters.")
-    if await checker.is_breached(password):
-        raise ProblemError(
-            422, "Weak password", "This password appears in a known data breach. Choose another."
-        )
+    if password.lower() in common_passwords():
+        raise ProblemError(422, "Weak password", "This password is too common. Choose another.")

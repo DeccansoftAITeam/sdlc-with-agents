@@ -18,10 +18,6 @@ class Settings(BaseSettings):
     # Owner role: used only by Alembic.
     migration_database_url: str = f"postgresql+asyncpg://{_DB}_owner:owner@localhost:5432/{_DB}"
     otel_exporter_otlp_endpoint: str | None = None
-    # Base URL of the web app, used in links sent by email (verify, reset).
-    web_base_url: str = "http://localhost:3000"
-    # "outbox" (local only) | "acs" (Azure Communication Services adapter, added with deploy work)
-    email_backend: str = "outbox"
 
 
 @lru_cache

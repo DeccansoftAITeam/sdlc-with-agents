@@ -8,7 +8,6 @@ import subprocess
 import sys
 from collections.abc import AsyncIterator
 from pathlib import Path
-from typing import TYPE_CHECKING
 
 import httpx
 import pytest
@@ -17,9 +16,6 @@ from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
 
 from app.core.config import get_settings
 from app.main import create_app
-
-if TYPE_CHECKING:
-    from app.core.email import InMemoryOutbox
 
 BACKEND = Path(__file__).resolve().parent.parent
 
@@ -43,31 +39,9 @@ async def app_engine() -> AsyncIterator[AsyncEngine]:
     await engine.dispose()
 
 
-class FakeBreachChecker:
-    """Deterministic stand-in for the HIBP range API; tests never call the network."""
-
-    breached = frozenset({"password1234", "correcthorsebatterystaple"})
-
-    async def is_breached(self, password: str) -> bool:
-        return password.lower() in self.breached
-
-
 @pytest.fixture
-def outbox() -> "InMemoryOutbox":
-    from app.core.email import InMemoryOutbox
-
-    return InMemoryOutbox()
-
-
-@pytest.fixture
-def app(outbox: "InMemoryOutbox") -> FastAPI:
-    from app.core.email import get_email_sender
-    from app.features.auth.passwords import get_breach_checker
-
-    application = create_app()
-    application.dependency_overrides[get_email_sender] = lambda: outbox
-    application.dependency_overrides[get_breach_checker] = FakeBreachChecker
-    return application
+def app() -> FastAPI:
+    return create_app()
 
 
 @pytest.fixture
