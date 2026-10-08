@@ -20,13 +20,14 @@
 
 | ID | Criterion | Layer |
 |---|---|---|
-| TD-002/AC-1 | When a verified admin invites an email as `staff` or `admin`, the system shall send a single-use invite link valid for 7 days. | API |
-| TD-002/AC-2 | When an invitee accepts with a password, the system shall create the user with the invited role and mark the email verified. | API |
-| TD-002/AC-3 | When a visitor registers at `/t/{slug}/register`, the system shall create a `customer` user and send a verification email. | API |
-| TD-002/AC-4 | While a customer's email is unverified, the system shall block ticket creation. | API |
+| TD-002/AC-1 | When an admin invites an email as `staff` or `admin`, the system shall return a single-use invite link valid for 7 days, **shown to the admin to copy and share** (never emailed). | API + E2E |
+| TD-002/AC-2 | When an invitee opens a valid invite link and sets a password, the system shall create the user with the invited role. | API |
+| TD-002/AC-3 | When a visitor registers at `/t/{slug}/register`, the system shall create a `customer` user who can log in immediately. | API |
+| TD-002/AC-4 | If more than 5 registrations come from one IP in 1 hour for a tenant, then the system shall respond 429 (TM-013). | API |
 | TD-002/AC-5 | If a non-admin calls an admin endpoint, then the system shall respond 403. | API |
 | TD-002/AC-6 | If a change would leave the tenant with zero active admins, then the system shall reject it. | API |
 | TD-002/AC-7 | When an admin changes a user's role or deactivates them, the system shall write an audit entry and revoke the user's refresh tokens. | API |
+| TD-002/AC-9 | When an admin requests a password reset for a user, the system shall return a single-use reset link valid for 30 minutes, shown to the admin to share, and invalidate any earlier live reset link. | API |
 | TD-002/AC-8 | The system shall never return users of another tenant from any endpoint. | API (cross-tenant) |
 
 ## Out of scope

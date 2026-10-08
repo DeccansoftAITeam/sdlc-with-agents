@@ -11,6 +11,8 @@
 
 ## Context and problem statement
 
+> **Amended 2026-10-08:** no email and no third-party services (constitution). Verification emails, emailed resets and the HIBP check were removed; see the table below.
+
 The PO ruled out SSO and external identity providers for v1 (constitution non-goal). Tenants are self-serve (grill Q1). Identity is **per tenant**: the same email in two tenants is two users (grill Q2). We must meet ASVS L2 for authentication and session management (V2, V3) while owning the code.
 
 ## Decision drivers
@@ -31,13 +33,13 @@ The PO ruled out SSO and external identity providers for v1 (constitution non-go
 
 | Item | Choice |
 |---|---|
-| Password hashing | Argon2id (`argon2-cffi`, OWASP parameters), breached-password check (k-anonymity range API, fail-open with a log) |
+| Password hashing | Argon2id (`argon2-cffi`, RFC 9106 defaults), NFKC-normalised; rejected if in a **bundled common-password list** (offline; no third-party API) |
 | Access token | JWT, **EdDSA (Ed25519)**, 15 min, claims `sub`, `tid` (tenant), `role`, `jti`; algorithm pinned on verify; signing key in Key Vault, read with managed identity |
 | Refresh token | Opaque 256-bit random value, **stored hashed**, 7 days, rotated on every use; **reuse of an old token revokes the whole family** (TM-001) |
 | Transport (web) | Access token in memory; refresh token in an `HttpOnly; Secure; SameSite=Strict` cookie scoped to `/api/auth/refresh` |
 | Identity | `users UNIQUE (tenant_id, email)`; login requires the tenant slug (`/t/{slug}/login`) |
-| Verify / reset tokens | 256-bit random, stored hashed, single use, 30 min (TM-014); a reset revokes all refresh families |
-| Enumeration | Identical responses and timing for unknown emails (TM-015) |
+| Invite / reset links | **Issued by an admin and shown to the admin to copy and share; never emailed.** 256-bit random, stored hashed, single use; invite 7 days, reset 30 min; one live link per user and purpose (TM-014); a reset revokes all refresh families. No email verification at all |
+| Enumeration | Identical login responses and timing for unknown emails (dummy hash) (TM-015) |
 | Rate limits | Login 5/min per (tenant, email) + 20/min per IP; signup 3/hour per IP (TM-002, TM-013) |
 
 ### Consequences

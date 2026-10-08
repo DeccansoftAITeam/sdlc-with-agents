@@ -56,7 +56,7 @@ flowchart LR
 | ID | Element | STRIDE | Threat | L | I | Mitigation | Status | Verified by |
 |---|---|---|---|---|---|---|---|---|
 | TM-001 | U → A | Spoofing | Stolen access or refresh token is reused | M | H | 15-min access tokens; rotating refresh tokens with reuse detection (reuse revokes the whole token family) | Planned | `test_refresh_reuse_revokes_family` |
-| TM-002 | U → A | Spoofing | Credential stuffing on login | H | H | Rate limit + lockout backoff; Argon2id; breached-password check | Planned | `test_login_rate_limit` |
+| TM-002 | U → A | Spoofing | Credential stuffing on login | H | H | Rate limit + lockout backoff; Argon2id; bundled common-password list | Planned | `test_login_rate_limit` |
 | TM-003 | A → DB | Elevation | **Cross-tenant read** via a missing filter (IDOR) or a forged `/t/{slug}` | M | H | `tenant_id` from JWT only; slug/JWT mismatch → 404 (middleware + architecture test); RLS `USING (tenant_id = current_setting('app.tenant_id'))`; app DB role without BYPASSRLS | Planned | `test_cross_tenant_*` on every endpoint + RLS test |
 | TM-004 | A | Elevation | A customer reads other customers' tickets in the same tenant | M | H | Role checks in the service layer: a customer sees only tickets they requested | Planned | `test_customer_ticket_scope` |
 | TM-005 | A | Elevation | Staff escalate themselves to admin | L | H | Role changes need an admin; audited | Planned | `test_role_change_requires_admin` |
@@ -67,9 +67,9 @@ flowchart LR
 | ~~TM-010~~ | — | — | Withdrawn: attachments are a v1 non-goal (grill Q4) | — | — | — | Withdrawn | — |
 | TM-011 | A | DoS | One tenant floods the API (noisy neighbour) | M | M | Per-tenant rate limits; pagination caps | Planned | k6 + Schemathesis |
 | TM-012 | W | Tampering | Stored XSS through ticket messages | M | H | React escaping; no `dangerouslySetInnerHTML`; markdown rendered with a sanitizer; CSP | Planned | E2E XSS payload test |
-| TM-013 | U → A | DoS / cost | Scripted **self-serve signups** create fake tenants to spam or burn AI tokens | H | M | Tenant-creation rate limit per IP; email verification before inviting staff; AI off by default (opt-in); per-tenant AI cap | Planned | `test_signup_rate_limit`, `test_ai_disabled_by_default` |
-| TM-014 | A → mail | Spoofing | Verification or reset link stolen or replayed | M | H | Tokens: 256-bit random, stored hashed, single-use, 30-min expiry; all sessions revoked on reset | Planned | `test_reset_token_single_use_and_expiry` |
-| TM-015 | A | Disclosure | Signup, login or reset responses reveal whether an email exists in a tenant | M | M | Identical responses and timing for known and unknown emails | Planned | `test_no_account_enumeration` |
+| TM-013 | U → A | DoS / cost | Scripted **self-serve signups** create fake tenants to spam or burn AI tokens | H | M | Signup rate limit per IP; AI off by default (opt-in); per-tenant AI cap. (No email verification: product decision 2026-10-08, accepted) | Planned | `test_signup_rate_limit`, `test_ai_disabled_by_default` |
+| TM-014 | A | Spoofing | Admin-issued **invite or reset link** stolen or replayed (it travels through whatever channel the admin uses to share it) | M | H | 256-bit random, stored hashed, single use, short expiry (invite 7 days, reset 30 min), one live link per user and purpose; a reset revokes all sessions; admin sees when a link was used | Planned | `test_reset_link_single_use_and_expiry`, `test_invite_link_single_use` |
+| TM-015 | A | Disclosure | Login responses reveal whether an email exists in a tenant | M | M | Identical responses and timing for known and unknown emails (dummy hash on unknown) | Planned | `test_no_account_enumeration` |
 | TM-016 | Q (SLA worker) | DoS | One huge tenant makes the SLA sweep exceed 30 s, delaying breaches for all tenants | M | M | Per-tenant batch limit (1000 rows per sweep); `sla_sweep_duration_seconds` alert at 5 s; capacity test | Planned | M8 capacity test |
 
 ## 3. AI threats — OWASP LLM Top 10 (2025)
@@ -107,7 +107,7 @@ The in-product AI has no tools or memory, so ASI06–ASI09 are N/A for the produ
 | Linking | Tickets across tenants could profile one person | **Identity is per tenant** (`UNIQUE(tenant_id, email)`); no email-first tenant lookup; no cross-tenant analytics |
 | Identifying | AI traces may identify people | Mask before prompt; traces kept 30 days |
 | Non-repudiation | — | Audit log covers staff only, not customers |
-| Detecting | Login error messages reveal whether an email exists | Generic login and reset messages |
+| Detecting | Login error messages reveal whether an email exists | Generic login messages |
 | Data disclosure | Over-collection | Only name + email required |
 | Unawareness | Customers don't know AI is used | AI is opt-in per tenant after an admin disclosure; AI label in the UI; privacy notice |
 | Non-compliance | Deletion must include embeddings + traces | Tenant/user deletion job covers all stores |
@@ -134,5 +134,6 @@ The in-product AI has no tools or memory, so ASI06–ASI09 are N/A for the produ
 | Date | Version | Change | Participants |
 |---|---|---|---|
 | 2026-10-06 | 1 | Initial (P0) | TL, Dev |
+| 2026-10-08 | 2.2 | No email / no third-party services: TM-013, TM-014, TM-015 reworded; mail flow removed | PO, TL |
 | 2026-10-07 | 2.1 | TD-007 design delta: TM-016 | TL |
 | 2026-10-07 | 2 | `/grill` Q1–Q9: added TM-013/014/015, withdrew TM-010, hardened TM-003 and LLM10 | TL, PO (agent-led grill) |
