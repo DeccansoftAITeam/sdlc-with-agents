@@ -15,7 +15,7 @@ Shared rules for every task: branch `agent/<task-id>-<slug>`; acceptance tests f
 | T-001-03 Login, JWT, refresh rotation, rate limits | TD-001/AC-4,5,6,7,8,12 | **M1** · `acceptance-tdd` | **High** | `backend/app/features/auth/{login,tokens,ratelimit}*.py`, `backend/app/core/security.py`, `backend/app/core/tenancy.py`, tests | — | T-001-02 |
 | T-001-04 ~~Password reset~~ | — | — | — | Removed 2026-10-08: resets are admin-issued links, now TD-002/AC-9 in T-002-01 | — | — |
 | T-001-05 Web: signup, login, reset-link pages | TD-001 E2E | M2 · `acceptance-tdd` | Medium | `apps/web/src/app/(auth)/**`, `apps/web/src/app/t/[slug]/(auth)/**`, `apps/web/e2e/auth.spec.ts` | 150 · 60 min | T-002-01 |
-| T-002-01 Roles, invites, customer registration, audit helper | TD-002/AC-1…8 | M2 · `acceptance-tdd` (+ `migration-writer` for the invites table) | **High** | `backend/app/features/users/**`, `backend/app/core/audit.py`, `backend/migrations/versions/*_td002_*`, tests | 200 · 60 min | T-001-03 |
+| T-002-01 Roles, invites, customer registration, audit helper | TD-002/AC-1…9 | M2 · `acceptance-tdd` (+ `migration-writer` for the invites table) | **High** | `backend/app/features/users/**`, `backend/app/core/audit.py`, `backend/migrations/versions/*_td002_*`, tests | 200 · 60 min | T-001-03 |
 | T-003-01 Tickets model, create, queue, view API | TD-003/AC-1…6,8 | M2 · `acceptance-tdd` | Medium | `backend/app/features/tickets/**`, `backend/migrations/versions/*_td003_*`, tests, `packages/core/src/generated/**` | 200 · 60 min | T-002-01 |
 | T-003-02 Web: create, queue, view (sanitized markdown) | TD-003/AC-7,9 | M2 · `acceptance-tdd` | Medium | `apps/web/src/features/tickets/**`, `apps/web/e2e/tickets.spec.ts` | 150 · 60 min | T-003-01 |
 | T-004-01 Messages, notes, status machine, assignment, audit | TD-004/AC-1…6,8 | M2 · `acceptance-tdd` | Medium | `backend/app/features/tickets/{workflow,messages}*.py`, migration `*_td004_*`, tests | 200 · 60 min | T-003-01 |
@@ -35,6 +35,8 @@ Shared rules for every task: branch `agent/<task-id>-<slug>`; acceptance tests f
 | Date | Task | Change | Why | Approved by |
 |---|---|---|---|---|
 | 2026-10-08 | T-001-01 | + `backend/app/features/auth/__init__.py`; `backend/tests/migrations/` → `backend/tests/migrations/**` | A feature package needs `__init__.py` or `load_models()` can't find its models; caught by the agent at task start (org rules §4: stop and ask) | TL, via PR review |
+| 2026-10-08 | T-001-02 | + router, schemas, passwords, service modules; `main.py` (wire router); `core/config.py` (email + web URL settings); `pyproject.toml`/`uv.lock` (new deps: argon2-cffi, email-validator, httpx); `tests/conftest.py`; `tests/features/**` | The brief-grilled scope listed only the core modules; a feature needs routing, schemas, wiring and fixtures. Dependencies are proposed in this PR (org rules §3.6) | TL, via PR review |
+| 2026-10-08 | T-001-02 → T-002-01 | TD-001/AC-11 (unverified admin can't invite or enable AI) moved | The guarded endpoints are built in T-002-01; testing a guard without its endpoint would be a fake test | TL, via PR review |
 | 2026-10-08 | **All** | **Requirements change (PO): no email, no third-party services except AI.** T-001-02 reduced to signup + password policy (verification, email port, HIBP removed); T-001-04 removed; invites and resets become admin-issued links in T-002-01 (TD-002/AC-1, AC-9) | Keep the teaching project simple and self-contained | PO + TL, via PR review |
 
 ## Approval
