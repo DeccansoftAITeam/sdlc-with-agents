@@ -22,7 +22,7 @@
 |---|---|---|
 | TD-002/AC-1 | ~~When an admin invites an email as `staff` or `admin`, the system shall return a single-use invite link valid for 7 days, **shown to the admin to copy and share** (never emailed).~~ **Deferred to v2** (2026-10-08) | — |
 | TD-002/AC-2 | ~~When an invitee opens a valid invite link and sets a password, the system shall create the user with the invited role.~~ **Deferred to v2** (2026-10-08) | — |
-| TD-002/AC-3 | When a visitor registers at `/t/{slug}/register`, the system shall create a `customer` user who can log in immediately. | API |
+| TD-002/AC-3 | When a visitor registers at `/t/{slug}/auth/register` (with the other auth routes), the system shall create a `customer` user who can log in immediately. | API |
 | TD-002/AC-4 | If more than 5 registrations come from one IP in 1 hour for a tenant, then the system shall respond 429 (TM-013). | API |
 | TD-002/AC-5 | If a non-admin calls an admin endpoint, then the system shall respond 403. | API |
 | TD-002/AC-6 | If a change would leave the tenant with zero active admins, then the system shall reject it. | API |
