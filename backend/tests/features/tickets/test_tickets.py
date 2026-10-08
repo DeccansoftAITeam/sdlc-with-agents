@@ -234,7 +234,7 @@ async def test_td004_customer_cannot_reply_to_someone_elses_ticket(client: httpx
 
 @pytest.mark.parametrize(
     ("path", "target"),
-    [(["new"], "pending_customer"), (["new", "open", "resolved"], "pending_customer"), (["new"], "new")],
+    [(["new"], "pending_customer"), (["new", "open", "resolved"], "pending_customer")],
 )
 async def test_td004_ac5_illegal_transitions_are_409(
     client: httpx.AsyncClient, path: list[str], target: str
@@ -288,3 +288,35 @@ async def test_td004_ac8_no_writes_to_another_tenants_ticket(client: httpx.Async
         tid = (await s.execute(text("SELECT resolve_tenant_slug(:s)"), {"s": slug_a})).scalar_one()
     async with tenant_session(uuid.UUID(str(tid))) as s:
         assert (await s.execute(text("SELECT status FROM tickets"))).scalar_one() == "new"  # untouched
+
+
+async def test_td004_assign_and_open_in_one_request(client: httpx.AsyncClient) -> None:
+    """Code review: assignment already moves new -> open; asking for open too must not 409."""
+    slug, _, staff_id, sam, _, cara = await _setup(client)
+    n = (await _open(client, slug, cara)).json()["number"]
+    r = await client.patch(
+        f"/t/{slug}/tickets/{n}", json={"assignee_id": staff_id, "status": "open"}, headers=sam
+    )
+    assert r.status_code == 200 and r.json()["status"] == "open"
+
+
+async def test_td004_same_status_is_a_noop(client: httpx.AsyncClient) -> None:
+    slug, *_, sam, _, cara = await _setup(client)
+    n = (await _open(client, slug, cara)).json()["number"]
+    r = await client.patch(f"/t/{slug}/tickets/{n}", json={"status": "new"}, headers=sam)
+    assert r.status_code == 200 and r.json()["status"] == "new"
+
+
+@pytest.mark.parametrize("field", ["status", "priority"])
+async def test_td004_null_status_or_priority_is_422(client: httpx.AsyncClient, field: str) -> None:
+    slug, *_, sam, _, cara = await _setup(client)
+    n = (await _open(client, slug, cara)).json()["number"]
+    assert (await client.patch(f"/t/{slug}/tickets/{n}", json={field: None}, headers=sam)).status_code == 422
+
+
+async def test_td003_ac4_naive_cursor_is_422_not_500(client: httpx.AsyncClient) -> None:
+    import base64
+
+    slug, *_, sam, _, _ = await _setup(client)
+    naive = base64.urlsafe_b64encode(b"2026-10-08T10:00:00|5").decode()
+    assert (await client.get(f"/t/{slug}/tickets", params={"cursor": naive}, headers=sam)).status_code == 422

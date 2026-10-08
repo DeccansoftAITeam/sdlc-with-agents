@@ -93,3 +93,8 @@ class TicketMessage(TenantOwned, Timestamped, Base):
     author_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True))
     kind: Mapped[str] = mapped_column(Text)
     body: Mapped[str] = mapped_column(Text)
+    # clock_timestamp(), not now(): messages written in one transaction (ticket + first
+    # message) still get distinct, ordered timestamps (code review).
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=text("clock_timestamp()")
+    )

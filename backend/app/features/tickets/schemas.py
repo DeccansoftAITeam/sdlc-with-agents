@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 Status = Literal["new", "open", "pending_customer", "resolved"]
 Priority = Literal["P1", "P2", "P3", "P4"]
@@ -22,8 +22,15 @@ class TicketPatchIn(BaseModel):
 
     status: Status | None = None
     priority: Priority | None = None
-    category: Category | None = None
-    assignee_id: uuid.UUID | None = None
+    category: Category | None = None  # null clears the category
+    assignee_id: uuid.UUID | None = None  # null unassigns
+
+    @model_validator(mode="after")
+    def _no_null_status_or_priority(self) -> "TicketPatchIn":
+        for field in ("status", "priority"):
+            if field in self.model_fields_set and getattr(self, field) is None:
+                raise ValueError(f"{field} can't be null")
+        return self
 
 
 class MessageIn(BaseModel):

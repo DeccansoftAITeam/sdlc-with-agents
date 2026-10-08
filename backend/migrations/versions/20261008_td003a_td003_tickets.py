@@ -78,7 +78,12 @@ def upgrade() -> None:
         sa.Column("kind", sa.Text(), nullable=False),
         sa.Column("body", sa.Text(), nullable=False),
         sa.Column("tenant_id", sa.UUID(), nullable=False),
-        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False),
+        sa.Column(
+            "created_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.text("clock_timestamp()"),
+            nullable=False,
+        ),
         sa.CheckConstraint("kind IN ('public','internal')", name="ck_ticket_messages_kind"),
         sa.CheckConstraint("char_length(body) BETWEEN 1 AND 10000", name="ck_ticket_messages_body_length"),
         sa.ForeignKeyConstraint(

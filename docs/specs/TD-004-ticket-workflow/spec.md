@@ -15,6 +15,17 @@ new ──(staff reply / assign)──► open ◄──(customer reply)── p
  resolved ──(customer reply)──► open   (reopen; TD-007/AC-11 resumes the clock)
 ```
 
+Explicit staff status changes (PATCH), amended in PR C after code review:
+
+| From | Staff may set | Why |
+|---|---|---|
+| `new` | `open`, `resolved` | Pick up without replying; close spam or duplicates |
+| `open` | `pending_customer`, `resolved` | |
+| `pending_customer` | `open`, `resolved` | Customer answered through another channel |
+| `resolved` | `open` | Staff reopen |
+
+Anything else is 409. Setting the current status is a no-op (200), not an error.
+
 ## Acceptance criteria (EARS)
 
 | ID | Criterion | Layer |

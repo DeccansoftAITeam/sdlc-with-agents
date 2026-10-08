@@ -117,7 +117,10 @@ def _encode_cursor(t: Ticket) -> str:
 def _decode_cursor(cursor: str) -> tuple[datetime, int]:
     try:
         created, number = base64.urlsafe_b64decode(cursor.encode()).decode().split("|")
-        return datetime.fromisoformat(created), int(number)
+        when = datetime.fromisoformat(created)
+        if when.tzinfo is None:
+            raise ValueError("cursor timestamp must be timezone-aware")
+        return when, int(number)
     except (ValueError, binascii.Error, UnicodeDecodeError):
         raise ProblemError(422, "Invalid cursor") from None
 
@@ -201,6 +204,15 @@ async def update(who: Principal, number: int, change: TicketPatchIn) -> Ticket:
     fields = change.model_fields_set
     async with tenant_session(who.tenant_id) as s:
         ticket = await _visible(s, who, number, lock=True)
+        target = change.status if "status" in fields else None
+        if (
+            target is not None
+            and target != ticket.status
+            and not workflow.staff_can_move(ticket.status, target)
+        ):
+            # Checked against the status BEFORE this request's other changes (an assignment
+            # also moves new -> open; {assignee_id, status: "open"} must not then fail).
+            raise ProblemError(409, "Invalid transition", f"Can't move from {ticket.status} to {target}.")
         if "assignee_id" in fields and change.assignee_id != ticket.assignee_id:
             if change.assignee_id is not None and not await _user_with_role(
                 s, change.assignee_id, STAFF_ROLES
@@ -216,12 +228,8 @@ async def update(who: Principal, number: int, change: TicketPatchIn) -> Ticket:
             if field in fields and new != getattr(ticket, field) and (field == "category" or new is not None):
                 await _audit_change(s, who, ticket, field, getattr(ticket, field), new)
                 setattr(ticket, field, new)
-        if "status" in fields and change.status is not None:
-            if not workflow.staff_can_move(ticket.status, change.status):
-                raise ProblemError(
-                    409, "Invalid transition", f"Can't move from {ticket.status} to {change.status}."
-                )
-            await _set_status(s, who, ticket, change.status)
+        if target is not None:
+            await _set_status(s, who, ticket, target)  # no-op when already there
         await s.flush()
         await s.refresh(ticket)
         return ticket
