@@ -22,11 +22,17 @@ depends_on: str | Sequence[str] | None = None
 
 
 def _app_role() -> str:
+    """The runtime role. Fails loudly instead of silently revoking from the wrong role."""
     from sqlalchemy.engine import make_url
 
     from app.core.config import get_settings
 
-    return make_url(get_settings().database_url).username or "PUBLIC"
+    settings = get_settings()
+    app = make_url(settings.database_url).username
+    owner = make_url(settings.migration_database_url).username
+    if not app or app == owner:
+        raise RuntimeError("database_url must use a runtime role distinct from the migration owner")
+    return app
 
 
 def upgrade() -> None:

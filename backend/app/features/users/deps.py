@@ -6,10 +6,13 @@ from fastapi import Depends
 
 from app.core.errors import ProblemError
 from app.core.security import Principal, current_principal
+from app.features.users import service
 
 
 async def require_admin(principal: Annotated[Principal, Depends(current_principal)]) -> Principal:
-    if principal.role != "admin":
+    # Check the token's role AND the database: a demoted or deactivated admin's access token
+    # stays valid for up to 15 minutes, but must lose admin powers immediately.
+    if principal.role != "admin" or await service.current_role(principal) != "admin":
         raise ProblemError(403, "Forbidden", "Admin role required.")
     return principal
 

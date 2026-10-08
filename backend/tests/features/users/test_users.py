@@ -244,7 +244,7 @@ async def test_td002_ac7_audit_log_is_append_only() -> None:
         ).scalar_one()
     from sqlalchemy.exc import DBAPIError
 
-    for sql in ("UPDATE audit_log SET action = 'x'", "DELETE FROM audit_log"):
+    for sql in ("UPDATE audit_log SET action = 'x'", "DELETE FROM audit_log", "TRUNCATE audit_log"):
         with pytest.raises(DBAPIError, match="permission denied"):
             async with tenant_session(uuid.UUID(str(tid))) as s:
                 await s.execute(text(sql))
@@ -265,3 +265,80 @@ async def test_td002_ac8_user_list_and_patch_are_tenant_scoped(client: httpx.Asy
     assert r.status_code == 404
     # and tenant A's token can't be used at tenant B's address (AC-12 of TD-001)
     assert (await client.get(f"/t/{slug_b}/users", headers=admin_a)).status_code == 404
+
+
+async def test_td002_ac5_demoted_admin_loses_admin_powers_immediately(client: httpx.AsyncClient) -> None:
+    """Security finding: a still-valid access token must not keep admin powers after demotion."""
+    slug = await _tenant(client)
+    ada = await _auth(client, slug)
+    await _create(client, slug, ada, role="admin", email="bea@example.com")
+    bea = await _auth(client, slug, "bea@example.com", STAFF_PASSWORD)
+    ada_id = await _user_id(client, slug, ada, "ada@example.com")
+    assert (
+        await client.patch(f"/t/{slug}/users/{ada_id}", json={"role": "staff"}, headers=bea)
+    ).status_code == 200
+    # Ada's access token still says "admin" for up to 15 minutes, but the server re-checks.
+    assert (await client.get(f"/t/{slug}/users", headers=ada)).status_code == 403
+
+
+async def test_td002_ac4_failed_registrations_count_too(client: httpx.AsyncClient) -> None:
+    """Security finding: 409 probing for existing emails is rate-limited like any attempt."""
+    slug = await _tenant(client)
+    body = {"name": "C", "email": "ada@example.com", "password": STAFF_PASSWORD}  # existing email
+    for _ in range(5):
+        assert (await client.post(f"/t/{slug}/auth/register", json=body)).status_code == 409
+    assert (await client.post(f"/t/{slug}/auth/register", json=body)).status_code == 429
+
+
+async def test_td002_ac6_concurrent_demotions_keep_one_admin(client: httpx.AsyncClient) -> None:
+    """Code review: two admins demoting each other at the same instant must not leave zero admins."""
+    import asyncio
+
+    slug = await _tenant(client)
+    ada = await _auth(client, slug)
+    await _create(client, slug, ada, role="admin", email="bea@example.com")
+    bea = await _auth(client, slug, "bea@example.com", STAFF_PASSWORD)
+    ada_id = await _user_id(client, slug, ada, "ada@example.com")
+    bea_id = await _user_id(client, slug, ada, "bea@example.com")
+    results = await asyncio.gather(
+        client.patch(f"/t/{slug}/users/{bea_id}", json={"role": "staff"}, headers=ada),
+        client.patch(f"/t/{slug}/users/{ada_id}", json={"role": "staff"}, headers=bea),
+    )
+    assert sorted(r.status_code for r in results) in ([200, 403], [200, 409])
+    async with tenant_session(await _tenant_id(slug)) as s:
+        admins = (
+            await s.execute(text("SELECT count(*) FROM users WHERE role = 'admin' AND is_active"))
+        ).scalar_one()
+    assert admins == 1
+
+
+async def test_td002_ac7_noop_change_writes_nothing(client: httpx.AsyncClient) -> None:
+    slug = await _tenant(client)
+    admin = await _auth(client, slug)
+    await _create(client, slug, admin)
+    sam = await _user_id(client, slug, admin, "sam@example.com")
+    r = await client.patch(f"/t/{slug}/users/{sam}", json={"role": "staff", "is_active": True}, headers=admin)
+    assert r.status_code == 200
+    async with tenant_session(await _tenant_id(slug)) as s:
+        actions = (await s.execute(text("SELECT action FROM audit_log"))).scalars().all()
+    assert actions == ["user.created"]
+
+
+async def test_td002_ac6_reactivated_admin_counts_again(client: httpx.AsyncClient) -> None:
+    slug = await _tenant(client)
+    ada = await _auth(client, slug)
+    await _create(client, slug, ada, role="admin", email="bea@example.com")
+    bea_id = await _user_id(client, slug, ada, "bea@example.com")
+    ada_id = await _user_id(client, slug, ada, "ada@example.com")
+    assert (
+        await client.patch(f"/t/{slug}/users/{bea_id}", json={"is_active": False}, headers=ada)
+    ).status_code == 200
+    assert (
+        await client.patch(f"/t/{slug}/users/{ada_id}", json={"role": "staff"}, headers=ada)
+    ).status_code == 409
+    assert (
+        await client.patch(f"/t/{slug}/users/{bea_id}", json={"is_active": True}, headers=ada)
+    ).status_code == 200
+    assert (
+        await client.patch(f"/t/{slug}/users/{ada_id}", json={"role": "staff"}, headers=ada)
+    ).status_code == 200
