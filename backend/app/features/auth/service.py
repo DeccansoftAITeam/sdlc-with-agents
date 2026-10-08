@@ -9,6 +9,7 @@ import uuid
 from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError
 
+from app.core import ratelimit
 from app.core.db import sessionmaker
 from app.core.errors import ProblemError
 from app.features.auth.models import Role, User
@@ -26,7 +27,11 @@ def _constraint(exc: IntegrityError) -> str | None:
     return name if isinstance(name, str) else None
 
 
-async def signup(data: SignupIn) -> str:
+SIGNUPS_PER_IP = (3, 3600.0)  # 3 signups per IP per hour (TD-001/AC-8, TM-013)
+
+
+async def signup(data: SignupIn, ip: str) -> str:
+    ratelimit.hit(f"signup-ip:{ip}", *SIGNUPS_PER_IP)
     if data.slug in RESERVED_SLUGS:
         raise ProblemError(422, "Slug not available", "This address is reserved.")
     enforce_policy(data.password)

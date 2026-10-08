@@ -18,3 +18,27 @@ class SignupIn(BaseModel):
 
 class SignupOut(BaseModel):
     tenant_slug: str
+
+
+class LoginIn(BaseModel):
+    email: EmailStr
+    password: str = Field(max_length=128)
+
+    @field_validator("email")
+    @classmethod
+    def _normalise_email(cls, value: str) -> str:
+        return value.strip().lower()
+
+
+class TokenOut(BaseModel):
+    access_token: str
+    token_type: str = Field(default="bearer")  # OAuth 2 field name, not a secret
+    expires_in: int
+
+
+class MeOut(BaseModel):
+    id: str
+    email: str
+    name: str
+    role: str
+    tenant_slug: str

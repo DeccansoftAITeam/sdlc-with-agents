@@ -18,6 +18,11 @@ class Settings(BaseSettings):
     # Owner role: used only by Alembic.
     migration_database_url: str = f"postgresql+asyncpg://{_DB}_owner:owner@localhost:5432/{_DB}"
     otel_exporter_otlp_endpoint: str | None = None
+    # Ed25519 private key (PEM) for signing access tokens (ADR-0002). From Key Vault in
+    # deployed environments; when unset and environment=local, an ephemeral key is generated.
+    jwt_private_key_pem: str | None = None
+    # Browser-facing path prefix: Next.js proxies /api/* to this API (refresh-cookie path).
+    cookie_path_prefix: str = "/api"
 
 
 @lru_cache
