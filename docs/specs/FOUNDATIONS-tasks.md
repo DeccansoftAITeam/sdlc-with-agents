@@ -10,7 +10,7 @@ Shared rules for every task: branch `agent/<task-id>-<slug>`; acceptance tests f
 
 | Task | Spec ACs | Mode · skill | Tier | Files in scope | Budget | Depends on |
 |---|---|---|---|---|---|---|
-| T-001-01 Tenant + user + token tables, RLS | — | M2 · `migration-writer` | **High** | `backend/app/features/auth/models.py`, `backend/migrations/versions/*_td001_*`, `backend/tests/migrations/` | 60 steps · 30 min | M3 |
+| T-001-01 Tenant + user + token tables, RLS | — | M2 · `migration-writer` | **High** | `backend/app/features/auth/{__init__,models}.py`, `backend/migrations/versions/*_td001_*`, `backend/tests/migrations/**` | 60 steps · 30 min | M3 |
 | T-001-02 Signup + verification + email port | TD-001/AC-1,2,3,7,9,11 | M2 · `acceptance-tdd` | **High** | `backend/app/features/auth/{signup,verify,email}*.py`, `backend/app/core/email.py`, `backend/tests/features/auth/test_signup*.py` | 200 · 60 min | T-001-01 |
 | T-001-03 Login, JWT, refresh rotation, rate limits | TD-001/AC-4,5,6,7,8,12 | **M1** · `acceptance-tdd` | **High** | `backend/app/features/auth/{login,tokens,ratelimit}*.py`, `backend/app/core/security.py`, `backend/app/core/tenancy.py`, tests | — | T-001-02 |
 | T-001-04 Password reset | TD-001/AC-7,9,10 | M2 · `acceptance-tdd` | **High** | `backend/app/features/auth/reset*.py`, tests | 120 · 45 min | T-001-03 |
@@ -29,6 +29,12 @@ Shared rules for every task: branch `agent/<task-id>-<slug>`; acceptance tests f
 - Lane B (Copilot): T-005-01 (no dependencies) → T-006-01 (after T-002-01) → web tasks
 
 **Why T-001-03 and T-005-01 are M1 (Pair), not M2:** token handling and the deadline maths are where subtle bugs hide. A human drives these interactively instead of reviewing a finished PR.
+
+## Scope amendments
+
+| Date | Task | Change | Why | Approved by |
+|---|---|---|---|---|
+| 2026-10-08 | T-001-01 | + `backend/app/features/auth/__init__.py`; `backend/tests/migrations/` → `backend/tests/migrations/**` | A feature package needs `__init__.py` or `load_models()` can't find its models; caught by the agent at task start (org rules §4: stop and ask) | TL, via PR review |
 
 ## Approval
 
