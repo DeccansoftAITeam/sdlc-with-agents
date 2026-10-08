@@ -108,6 +108,7 @@ Finally, test a guardrail. Ask either agent to `run az account show`. Claude Cod
 ```sh
 git add -A
 git commit -m "chore: initial README"
+git branch -M main      # some machines default to 'master'; this renames it
 git push -u origin main
 git tag m00-done && git push origin m00-done      # your own tag in your repo
 ```

@@ -6,6 +6,14 @@ Skills used: **`grill`** (installed in M0). The audit hook logs every step.
 
 Run each step in **one** builder (Claude Code or Copilot agent mode); the skills and prompts work in both. Use the **other** builder for the review in step 5, so two separate "pairs of eyes" see the work.
 
+
+> **Seeing the reference files.** Your `../course-ref` is checked out at the M0 tag, so later files aren't in it. Read any file at any module's finished state with:
+> ```sh
+> git -C ../course-ref fetch --tags
+> git -C ../course-ref show m01-done:<path>        # e.g. m01-done:docs/constitution.md
+> ```
+> or browse it on GitHub: `https://github.com/DeccansoftAITeam/sdlc-with-agents/blob/m01-done/<path>`.
+
 ## Step 1 — Intake interview with `/grill` (25 min)
 
 > 🎩 **Product Owner hat.**
@@ -53,7 +61,7 @@ Subject: docs/constitution.md and docs/security/threat-model.md as drafted.
 Find decisions that are missing, vague, or contradict each other. Security and tenancy first.
 ```
 
-The reference run asked **9 questions**. Compare yours with [`docs/grill-logs/2026-10-07-constitution.md`](../../docs/grill-logs/2026-10-07-constitution.md). Your questions will differ; the categories shouldn't:
+The reference run asked **9 questions**. Compare yours with the reference grill log: `git -C ../course-ref show m01-done:docs/grill-logs/2026-10-07-constitution.md`. Your questions will differ; the categories shouldn't:
 
 - How tenants are created (self-serve?) and what that costs if it's abused
 - Whether identity is global or per tenant
@@ -87,6 +95,9 @@ Do not edit any file.
 Add the findings you agree with, using a second `/grill` pass if a finding needs a decision.
 
 ## Step 6 — Approve and tag
+
+> **Who commits?** You do. The agent drafts; humans approve and commit. If you ask the agent to commit, it will (correctly) refuse to commit to `main`: org rules forbid agents from pushing to protected branches. Committing straight to `main` yourself is fine in M1–M2 because your repo has no branch protection yet. M3 turns it on, and from then on every change goes through a PR. *Optional:* practise early by telling the agent "create a branch and commit", then merge the PR yourself.
+
 
 The gate is TL + PO approval. Sign §13 of the constitution, then commit using the org attribution trailers (org rules §8):
 

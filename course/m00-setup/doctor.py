@@ -35,15 +35,28 @@ def shell_hint() -> str | None:
     )
 
 
+def branch_hint() -> str | None:
+    git = shutil.which("git")
+    if git is None:
+        return None
+    out = subprocess.run([git, "config", "--global", "init.defaultBranch"], capture_output=True, text=True)  # noqa: S603
+    if out.stdout.strip() == "main":
+        return None
+    return (
+        "git's default branch is not 'main'. Run: git config --global init.defaultBranch main "
+        "(or use `git branch -M main` before your first push)."
+    )
+
+
 def main() -> int:
     missing = 0
     for tool in TOOLS:
         v = version(tool)
         missing += v == "MISSING"
         print(f"{tool:<8} {v}")
-    hint = shell_hint()
-    if hint:
-        print(f"\nNOTE: {hint}")
+    for hint in (shell_hint(), branch_hint()):
+        if hint:
+            print(f"\nNOTE: {hint}")
     print(f"\n{'All tools found.' if not missing else f'{missing} tool(s) MISSING: install them first.'}")
     return 1 if missing else 0
 
