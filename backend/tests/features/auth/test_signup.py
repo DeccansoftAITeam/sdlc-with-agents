@@ -10,10 +10,10 @@ from typing import Any
 
 import httpx
 import pytest
-from app.core.email import InMemoryOutbox
 from sqlalchemy import text
 
 from app.core.db import system_session, tenant_session
+from app.core.email import InMemoryOutbox
 
 PASSWORD = "a-long-unique-passphrase"
 LINK = re.compile(r"/t/(?P<slug>[a-z0-9-]+)/verify\?token=(?P<token>[A-Za-z0-9_-]+)")
@@ -95,10 +95,13 @@ async def test_td001_ac2_taken_slug_rejected(client: httpx.AsyncClient) -> None:
     assert r.headers["content-type"] == "application/problem+json"
 
 
-@pytest.mark.parametrize("slug", ["api", "admin", "t", "login", "signup", "static", "health"])
+# "t" is also reserved but is already rejected by the format rule (min 3 chars).
+@pytest.mark.parametrize("slug", ["api", "admin", "login", "signup", "static", "health"])
 async def test_td001_ac2_reserved_slug_rejected(client: httpx.AsyncClient, slug: str) -> None:
     r = await client.post("/signup", json=_signup_body(slug=slug))
     assert r.status_code == 422
+    assert r.headers["content-type"] == "application/problem+json"
+    assert r.json()["title"] == "Slug not available"
 
 
 @pytest.mark.parametrize("slug", ["ab", "Has-Caps", "under_score", "x" * 41, "spa ce"])
@@ -114,6 +117,8 @@ async def test_td001_ac2_malformed_slug_rejected(client: httpx.AsyncClient, slug
 async def test_td001_ac3_short_password_rejected(client: httpx.AsyncClient) -> None:
     r = await client.post("/signup", json=_signup_body(password="short-pw-11"))  # 11 chars
     assert r.status_code == 422
+    assert r.headers["content-type"] == "application/problem+json"
+    assert r.json()["title"] == "Weak password"
 
 
 async def test_td001_ac3_breached_password_rejected(client: httpx.AsyncClient) -> None:
@@ -124,7 +129,8 @@ async def test_td001_ac3_breached_password_rejected(client: httpx.AsyncClient) -
 
 async def test_td001_ac3_rejected_signup_leaves_no_tenant(client: httpx.AsyncClient) -> None:
     body = _signup_body(password="password1234")
-    await client.post("/signup", json=body)
+    r = await client.post("/signup", json=body)
+    assert r.status_code == 422
     async with system_session() as s:
         assert (
             await s.execute(text("SELECT resolve_tenant_slug(:s)"), {"s": body["slug"]})
@@ -219,3 +225,32 @@ async def test_td001_ac7_resend_response_identical_for_unknown_email(
     assert known.status_code == unknown.status_code == 202
     assert known.json() == unknown.json()
     assert all(m.to != "nobody@example.com" for m in outbox.messages)
+
+
+async def test_td001_ac9_concurrent_resends_never_fail(
+    client: httpx.AsyncClient, outbox: InMemoryOutbox
+) -> None:
+    """Review finding: racing resends must serialise, not 500 on the one-live-token index."""
+    import asyncio
+
+    body = _signup_body()
+    await client.post("/signup", json=body)
+    url = f"/t/{body['slug']}/auth/verify/resend"
+    results = await asyncio.gather(*(client.post(url, json={"email": body["email"]}) for _ in range(5)))
+    assert {r.status_code for r in results} == {202}
+    _, latest = _token_from(outbox)
+    assert (await client.post(f"/t/{body['slug']}/auth/verify", json={"token": latest})).status_code == 204
+
+
+async def test_td001_ac9_deactivated_user_cannot_verify(
+    client: httpx.AsyncClient, outbox: InMemoryOutbox
+) -> None:
+    """Security review #5: a live link must not verify a deactivated account."""
+    body = _signup_body()
+    await client.post("/signup", json=body)
+    slug, token = _token_from(outbox)
+    async with tenant_session(await _tenant_id(slug)) as s:
+        await s.execute(text("UPDATE users SET is_active = false"))
+    assert (await client.post(f"/t/{slug}/auth/verify", json={"token": token})).status_code == 400
+    async with tenant_session(await _tenant_id(slug)) as s:
+        assert (await s.execute(text("SELECT email_verified_at FROM users"))).scalar_one() is None

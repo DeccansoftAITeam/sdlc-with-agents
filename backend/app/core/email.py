@@ -9,6 +9,8 @@ import logging
 from dataclasses import dataclass, field
 from typing import Protocol
 
+from app.core.config import get_settings
+
 log = logging.getLogger(__name__)
 
 
@@ -34,9 +36,15 @@ class InMemoryOutbox:
         log.info("email queued in local outbox", extra={"subject": message.subject})
 
 
-_default_sender = InMemoryOutbox()
+_local_outbox = InMemoryOutbox()
 
 
 def get_email_sender() -> EmailSender:
-    """FastAPI dependency. Production wiring replaces this with the ACS adapter."""
-    return _default_sender
+    """FastAPI dependency. The in-memory outbox is allowed ONLY when environment=local;
+    anywhere else, a missing real sender is a configuration error, never a silent no-op."""
+    settings = get_settings()
+    if settings.email_backend == "outbox" and settings.environment == "local":
+        return _local_outbox
+    raise RuntimeError(
+        f"email_backend={settings.email_backend!r} is not available in environment={settings.environment!r}"
+    )

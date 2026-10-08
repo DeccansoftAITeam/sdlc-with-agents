@@ -20,6 +20,8 @@ class Settings(BaseSettings):
     otel_exporter_otlp_endpoint: str | None = None
     # Base URL of the web app, used in links sent by email (verify, reset).
     web_base_url: str = "http://localhost:3000"
+    # "outbox" (local only) | "acs" (Azure Communication Services adapter, added with deploy work)
+    email_backend: str = "outbox"
 
 
 @lru_cache

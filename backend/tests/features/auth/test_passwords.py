@@ -46,3 +46,25 @@ async def test_hibp_outage_fails_open(kw: dict[str, Any]) -> None:
 async def test_policy_rejects_over_max_length() -> None:
     with pytest.raises(ProblemError):
         await enforce_policy("x" * 129, _checker())
+
+
+def test_outbox_sender_refused_outside_local(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Review finding: no silent no-op email in deployed environments."""
+    from app.core import email
+    from app.core.config import get_settings
+
+    monkeypatch.setenv("ENVIRONMENT", "staging")
+    get_settings.cache_clear()
+    try:
+        with pytest.raises(RuntimeError, match="not available"):
+            email.get_email_sender()
+    finally:
+        monkeypatch.delenv("ENVIRONMENT")
+        get_settings.cache_clear()
+    assert isinstance(email.get_email_sender(), email.InMemoryOutbox)
+
+
+def test_password_is_unicode_normalised() -> None:
+    """Security review #4: 'ﬁ' (ligature) and 'fi' must be the same passphrase."""
+    h = hash_password("my ﬁne long passphrase")
+    assert verify_password(h, "my fine long passphrase")

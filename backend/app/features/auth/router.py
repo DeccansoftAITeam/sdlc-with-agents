@@ -2,7 +2,7 @@
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Response, status
+from fastapi import APIRouter, BackgroundTasks, Depends, Response, status
 
 from app.core.email import EmailSender, get_email_sender
 from app.features.auth import service
@@ -28,6 +28,7 @@ async def verify(slug: str, body: VerifyIn) -> Response:
 
 
 @router.post("/t/{slug}/auth/verify/resend", status_code=status.HTTP_202_ACCEPTED)
-async def resend(slug: str, body: ResendIn, sender: Sender) -> Accepted:
-    await service.resend_verification(slug, body.email, sender)
+async def resend(slug: str, body: ResendIn, sender: Sender, tasks: BackgroundTasks) -> Accepted:
+    await service.resolve_tenant(slug)  # unknown tenant -> 404 before accepting
+    tasks.add_task(service.resend_verification, slug, body.email, sender)
     return RESEND_ACCEPTED

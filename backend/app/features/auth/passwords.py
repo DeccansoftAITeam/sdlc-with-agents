@@ -9,6 +9,7 @@
 
 import hashlib
 import logging
+import unicodedata
 from typing import Protocol
 
 import httpx
@@ -24,13 +25,18 @@ MIN_LENGTH = 12
 MAX_LENGTH = 128
 
 
+def normalise(password: str) -> str:
+    """NFKC, so the same passphrase typed on different keyboards hashes the same (ASVS V2.1)."""
+    return unicodedata.normalize("NFKC", password)
+
+
 def hash_password(password: str) -> str:
-    return _hasher.hash(password)
+    return _hasher.hash(normalise(password))
 
 
 def verify_password(password_hash: str, password: str) -> bool:
     try:
-        return _hasher.verify(password_hash, password)
+        return _hasher.verify(password_hash, normalise(password))
     except (VerificationError, InvalidHashError):
         return False
 
@@ -53,7 +59,10 @@ class HibpRangeChecker:
                 r = await client.get(self.URL.format(prefix=prefix), headers={"Add-Padding": "true"})
                 r.raise_for_status()
         except httpx.HTTPError:
-            log.warning("breached-password check unavailable; failing open")
+            log.warning(
+                "breached-password check unavailable; failing open",
+                extra={"security_event": "breach_check_unavailable"},  # alert on this in M11
+            )
             return False
         return any(line.split(":", 1)[0] == suffix for line in r.text.splitlines())
 
@@ -63,6 +72,7 @@ def get_breach_checker() -> BreachedPasswordChecker:
 
 
 async def enforce_policy(password: str, checker: BreachedPasswordChecker) -> None:
+    password = normalise(password)
     if not MIN_LENGTH <= len(password) <= MAX_LENGTH:
         raise ProblemError(422, "Weak password", f"Use {MIN_LENGTH} to {MAX_LENGTH} characters.")
     if await checker.is_breached(password):

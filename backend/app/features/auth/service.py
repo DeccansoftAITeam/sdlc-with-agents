@@ -12,7 +12,7 @@ import hashlib
 import secrets
 import uuid
 
-from sqlalchemy import select, text, update
+from sqlalchemy import func, select, text, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -25,8 +25,18 @@ from app.features.auth.passwords import BreachedPasswordChecker, enforce_policy,
 from app.features.auth.schemas import SignupIn
 
 RESERVED_SLUGS = frozenset({"api", "admin", "t", "login", "signup", "static", "health"})
-LINK_LIFETIME = "30 minutes"
+LINK_LIFETIME_MINUTES = 30
 INVALID_LINK = ProblemError(400, "Invalid or expired link", "Request a new verification email.")
+
+
+SLUG_UNIQUE = "tenants_slug_key"  # Postgres default name for tenants.slug UNIQUE (migration td001a)
+
+
+def _constraint(exc: IntegrityError) -> str | None:
+    """Constraint name from the driver error (asyncpg), not from parsing the message."""
+    cause = getattr(exc.orig, "__cause__", None)
+    name = getattr(cause, "constraint_name", None)
+    return name if isinstance(name, str) else None
 
 
 def new_token() -> tuple[str, str]:
@@ -49,6 +59,9 @@ async def resolve_tenant(slug: str) -> uuid.UUID:
 
 async def _issue_verify_token(s: AsyncSession, tenant_id: uuid.UUID, user_id: uuid.UUID) -> str:
     """Consume any live verify token for the user, then create a new one (one live link)."""
+    # Lock the user row so concurrent resends serialise instead of racing the
+    # one-live-token unique index (which would surface as a 500).
+    await s.execute(select(User.id).where(User.id == user_id).with_for_update())
     await s.execute(
         update(EmailToken)
         .where(
@@ -65,7 +78,7 @@ async def _issue_verify_token(s: AsyncSession, tenant_id: uuid.UUID, user_id: uu
             user_id=user_id,
             purpose=EmailTokenPurpose.VERIFY,
             token_hash=digest,
-            expires_at=text(f"now() + interval '{LINK_LIFETIME}'"),
+            expires_at=func.now() + func.make_interval(0, 0, 0, 0, 0, LINK_LIFETIME_MINUTES),
         )
     )
     await s.flush()
@@ -115,7 +128,7 @@ async def signup(data: SignupIn, checker: BreachedPasswordChecker, sender: Email
             await s.flush()
             raw = await _issue_verify_token(s, tid, admin.id)
     except IntegrityError as exc:
-        if "tenants_slug_key" in str(exc.orig):
+        if _constraint(exc) == SLUG_UNIQUE:
             raise ProblemError(409, "Slug not available", "Choose another address.") from None
         raise
     await _send_verification(sender, data.email, data.slug, raw)
@@ -140,15 +153,24 @@ async def verify_email(slug: str, raw: str) -> None:
         ).scalar_one_or_none()
         if user_id is None:
             raise INVALID_LINK
-        await s.execute(
-            update(User)
-            .where(User.id == user_id, User.email_verified_at.is_(None))
-            .values(email_verified_at=text("now()"))
-        )
+        active = (
+            await s.execute(
+                update(User)
+                .where(User.id == user_id, User.is_active.is_(True))
+                .values(email_verified_at=func.coalesce(User.email_verified_at, func.now()))
+                .returning(User.id)
+            )
+        ).scalar_one_or_none()
+        if active is None:  # deactivated user: error rolls back the transaction; nothing changes
+            raise INVALID_LINK
 
 
 async def resend_verification(slug: str, email: str, sender: EmailSender) -> None:
-    """Always succeeds from the caller's view; only unverified, active users get an email."""
+    """Always succeeds from the caller's view; only unverified, active users get an email.
+
+    The router runs this as a background task, so response time doesn't reveal whether
+    the account exists (TM-015).
+    """
     tid = await resolve_tenant(slug)
     raw: str | None = None
     async with tenant_session(tid) as s:
