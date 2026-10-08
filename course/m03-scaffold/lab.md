@@ -75,10 +75,20 @@ uvx copier update --trust --defaults --skip-tasks --vcs-ref v1.0.2
 
 Nothing changes, because you're already on v1.0.2. Read `.copier-answers.yml`: that's how the Platform Owner can see which projects are behind.
 
+## Step 7 — Protect `main` (15 min)
+
+> 🎩 **Platform Owner.** Add a second person (or your second account) as a collaborator and code owner (`copier update -d "code_owners=@you @reviewer"`), then create the ruleset:
+
+```sh
+gh api -X POST repos/<owner>/<repo>/rulesets --input ruleset.json
+```
+
+Use the JSON from the reference repo (`Settings → Rules`): PR required, 1 code-owner approval, **last-push approval**, dismiss stale reviews, resolved threads, required checks `hygiene`/`backend`/`web`, squash only. Then prove it: `git commit --allow-empty -m test && git push`. Expect `GH013: Changes must be made through a pull request`.
+
 ## Step 7 — Tag
 
 ```sh
-git switch main && git push && git tag m03-done && git push origin m03-done
+git switch main && git tag m03-done && git push origin m03-done   # tags aren't covered by the branch ruleset
 ```
 
 ## Done when

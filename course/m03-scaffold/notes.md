@@ -68,6 +68,24 @@ No `ACTIVE` file means no task, which means M1 pair work: nothing is blocked. Yo
 | Git hooks | pre-commit / pre-push | project-scaffold | **M5** |
 | CI workflows | pr-gate, nightly, release | project-scaffold | M6, M8, M9 |
 
+## 6. Repository rules: the last guardrail lives on GitHub, not in the repo
+
+Hooks run on *your* machine and can be skipped. The server-side ruleset on `main` can't:
+
+| Rule | Why |
+|---|---|
+| Changes only through a pull request | No one (human or agent) pushes to `main` |
+| 1 approval from a **code owner** | CODEOWNERS lists two people |
+| **Approval must come from someone other than the last pusher** | Enforces "the prompter can't be the only approver" |
+| Stale approvals dismissed on new pushes | An approval covers the code you saw, not code pushed later |
+| All conversations resolved | Every review finding gets a fix or a reason |
+| Status checks `hygiene`, `backend`, `web` must pass, branch up to date | The PR gate (M6) is mandatory |
+| Squash merge only, linear history, no force-push, no deletion | One commit per PR, auditable history |
+
+The course repo uses two accounts: **DeccansoftAITeam** prompts agents and opens PRs; **suresh-deccansoft** reviews and approves. With only two people, the standard's "2 approvals for high-risk changes" can't be enforced, so it's recorded as a known gap for solo or pair teams.
+
+> Rulesets on private repos need a paid plan (or an organization on Team). This repo is public, so they're free.
+
 ## Check yourself
 
 1. A teammate wants to "just add" a pre-commit hook to TicketDesk directly. What's wrong with that, and where should the change go?
