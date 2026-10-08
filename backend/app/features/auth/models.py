@@ -1,7 +1,7 @@
 """TD-001 data model (ADR-0002 auth, ADR-0003 multi-tenancy).
 
-- `tenants` is the registry, not tenant-owned (no RLS). Access it only through narrow
-  functions; it holds no personal data.
+- `tenants` is the registry, not tenant-owned (no RLS). The runtime role has NO table
+  access: it calls `resolve_tenant_slug()` / `create_tenant()` (SECURITY DEFINER).
 - Every other table is tenant-owned with forced RLS. Child rows reference users via
   the composite key (tenant_id, user_id), so a row can never point at another
   tenant's user even if application code is wrong.
@@ -58,6 +58,7 @@ class User(TenantOwned, Timestamped, Base):
     __table_args__ = (
         UniqueConstraint("tenant_id", "email", name="uq_users_tenant_email"),
         UniqueConstraint("tenant_id", "id", name="uq_users_tenant_id"),  # target of composite FKs
+        ForeignKeyConstraint(["tenant_id"], ["tenants.id"], name="fk_users_tenant", ondelete="RESTRICT"),
         CheckConstraint("email = lower(email)", name="ck_users_email_lowercase"),
         CheckConstraint("char_length(email) BETWEEN 3 AND 320", name="ck_users_email_length"),
         CheckConstraint("char_length(name) BETWEEN 1 AND 200", name="ck_users_name_length"),
@@ -82,6 +83,7 @@ class RefreshToken(TenantOwned, Timestamped, Base):
         Index("ix_refresh_tokens_family", "tenant_id", "family_id"),
         Index("ix_refresh_tokens_user", "tenant_id", "user_id"),  # backs the composite FK
         CheckConstraint("char_length(token_hash) = 64", name="ck_refresh_tokens_hash_len"),
+        CheckConstraint("expires_at > created_at", name="ck_refresh_tokens_expiry"),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(
@@ -100,8 +102,17 @@ class EmailToken(TenantOwned, Timestamped, Base):
     __table_args__ = (
         ForeignKeyConstraint(["tenant_id", "user_id"], ["users.tenant_id", "users.id"], ondelete="CASCADE"),
         Index("ix_email_tokens_user", "tenant_id", "user_id"),  # backs the composite FK
+        Index(
+            "uq_email_tokens_one_live",
+            "tenant_id",
+            "user_id",
+            "purpose",
+            unique=True,
+            postgresql_where=text("used_at IS NULL"),
+        ),
         CheckConstraint("purpose IN ('verify','reset')", name="ck_email_tokens_purpose"),
         CheckConstraint("char_length(token_hash) = 64", name="ck_email_tokens_hash_len"),
+        CheckConstraint("expires_at > created_at", name="ck_email_tokens_expiry"),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(
