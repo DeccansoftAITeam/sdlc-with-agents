@@ -29,7 +29,7 @@
 | TD-001/AC-7 | The system shall return identical responses and similar timing for unknown and known emails on login failure. | API |
 | TD-001/AC-8 | If more than 5 failed logins occur for a (tenant, email) in 1 minute, or more than 3 signups from one IP in 1 hour, then the system shall respond 429. | API |
 | TD-001/AC-9 | ~~Email verification~~ (removed 2026-10-08: no email) | — |
-| TD-001/AC-10 | When a user completes a password reset (with an admin-issued link, TD-002/AC-9), the system shall revoke all their refresh token families. | API |
+| TD-001/AC-10 | ~~Reset revokes sessions~~ **Deferred to v2** with admin-issued reset links (2026-10-08) | — |
 | TD-001/AC-11 | ~~Unverified admin restrictions~~ (removed 2026-10-08: no verification) | — |
 | TD-001/AC-12 | If the URL slug does not match the access token's tenant, then the system shall respond 404. | API |
 
