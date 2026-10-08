@@ -6,6 +6,7 @@ from app.core import errors, ratelimit, security, telemetry
 from app.core.config import get_settings
 from app.features.auth.router import router as auth_router
 from app.features.health.router import router as health_router
+from app.features.tickets.router import router as tickets_router
 from app.features.users.router import router as users_router
 
 
@@ -19,6 +20,7 @@ def create_app() -> FastAPI:
     app.include_router(health_router)
     app.include_router(auth_router)
     app.include_router(users_router)
+    app.include_router(tickets_router)
     return app
 
 

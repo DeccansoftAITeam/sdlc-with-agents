@@ -13,6 +13,7 @@ from pathlib import Path
 # Must be set before the app is imported: the app checks its signing key at startup.
 os.environ.setdefault("JWT_EPHEMERAL_KEY", "true")  # tests sign with an in-memory key
 
+
 import httpx
 import pytest
 from fastapi import FastAPI
@@ -22,6 +23,18 @@ from app.core.config import get_settings
 from app.main import create_app
 
 BACKEND = Path(__file__).resolve().parent.parent
+
+
+@pytest.fixture(scope="session", autouse=True)
+def fast_password_hashing() -> None:
+    """Fast Argon2 for tests only; production keeps the RFC 9106 default cost. Hashes carry
+    their own parameters, so verification is unaffected. Without this the suite blows the
+    90 s pre-push budget (every test creates and logs in several accounts)."""
+    from argon2 import PasswordHasher
+
+    from app.features.auth import passwords
+
+    passwords._hasher = PasswordHasher(time_cost=1, memory_cost=1024, parallelism=1)
 
 
 @pytest.fixture(scope="session", autouse=True)
