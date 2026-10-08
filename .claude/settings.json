@@ -20,6 +20,7 @@
       "Bash(pnpm test:*)"
     ],
     "ask": [
+      "Edit(./docs/constitution.md)",
       "Bash(git push:*)",
       "Bash(pnpm add:*)",
       "Bash(uv add:*)",
@@ -65,7 +66,6 @@
       "Edit(./.github/hooks/**)",
       "Edit(./.github/copilot-instructions.md)",
       "Edit(./.vscode/settings.json)",
-      "Edit(./docs/constitution.md)",
       "Edit(./.claude/skills/**)",
       "Edit(./.github/agents/**)",
       "Edit(./skills-lock.json)",
