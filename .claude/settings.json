@@ -28,7 +28,8 @@
       "Edit(./backend/migrations/**)",
       "Edit(./backend/app/features/auth/**)",
       "Edit(./infra/**)",
-      "Edit(./docs/adr/**)"
+      "Edit(./docs/adr/**)",
+      "Edit(./docs/constitution.md)"
     ],
     "deny": [
       "Bash(git push --force:*)",
@@ -65,7 +66,6 @@
       "Edit(./.github/hooks/**)",
       "Edit(./.github/copilot-instructions.md)",
       "Edit(./.vscode/settings.json)",
-      "Edit(./docs/constitution.md)",
       "Edit(./.claude/skills/**)",
       "Edit(./.github/agents/**)",
       "Edit(./skills-lock.json)"
