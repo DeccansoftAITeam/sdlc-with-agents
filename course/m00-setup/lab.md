@@ -1,32 +1,23 @@
 # M0 Lab — Toolbox and Empty Repo
 
-**Time:** about 1 h · **Ends at tag:** `m00-done`
+**Time:** about 1 h · **Ends at tag:** `m00-done-v2`
+
+> **Which shell?** All labs use **bash** syntax. On Windows, use **Git Bash** (installed with Git: Start → "Git Bash"). `cmd.exe` and PowerShell don't understand several commands in these labs. The two Python scripts below (`doctor.py`, `bootstrap.py`) work in any shell.
 
 ## 1. Install the toolbox
 
 | Tool | Version | Why |
 |---|---|---|
-| git | 2.40+ | — |
+| git (includes Git Bash on Windows) | 2.40+ | — |
 | GitHub CLI `gh` | 2.50+ | PRs, repo settings |
-| Python | 3.12+ | Backend |
+| Python | 3.12+ | Backend, lab scripts |
 | uv | 0.6+ | Python deps and venvs |
-| Node.js | 22+ | Frontend |
+| Node.js | 22+ | Frontend, `npx skills` |
 | pnpm | 9+ | Frontend deps |
 | Docker | 24+ | Postgres locally, images |
-| Azure CLI `az` | 2.60+ | Deploy (from M3) |
+| Azure CLI `az` | 2.60+ | Deploy (from M6) |
 | Claude Code | latest | Builder agent |
 | VS Code + GitHub Copilot (Chat, agent mode) | latest | Builder agent |
-
-Then check everything at once:
-
-```sh
-# macOS / Linux / Git Bash
-./scripts/doctor.sh
-# Windows PowerShell
-./scripts/doctor.ps1
-```
-
-Fix every `MISSING` line before you continue.
 
 ## 2. Sign in
 
@@ -38,43 +29,36 @@ claude          # follow the login prompt, then /exit
 
 In VS Code, sign in to GitHub Copilot and check that **Agent** mode appears in the Chat view.
 
-## 3. Create your repo
+## 3. Create your repo and get the course files
 
 ```sh
 gh repo create <you>/sdlc-with-agents --private --clone
 cd sdlc-with-agents
+git clone --branch m00-done-v2 https://github.com/DeccansoftAITeam/sdlc-with-agents ../course-ref
+python ../course-ref/course/m00-setup/doctor.py
 ```
 
-## 4. Install the org agent bundle (20 min)
+`doctor.py` lists every tool with its version. Fix every `MISSING` line before you continue. On Windows it also warns you if you're not in Git Bash.
+
+## 4. Install the guardrails and the org agent bundle (20 min)
 
 > 🎩 **Platform Owner hat.** The bundle lives in its own repo, [`DeccansoftAITeam/agent-bundle`](https://github.com/DeccansoftAITeam/agent-bundle): the org's central standards repo. Projects install a **pinned version** (`v2.0.0`) and commit the result.
 
-First copy the **project scaffold files** from the course repo. These are guardrails that live in *your* repo and are protected by CODEOWNERS, not by an installer:
+From the root of **your** repo:
 
 ```sh
-git clone --branch m00-done https://github.com/DeccansoftAITeam/sdlc-with-agents ../course-ref
-cp -r ../course-ref/scripts ../course-ref/docs .
-cp ../course-ref/{AGENTS.md,CLAUDE.md,CODEOWNERS,.gitignore,.gitattributes} .
-mkdir -p .claude .github .vscode
-cp ../course-ref/.claude/settings.json .claude/
-cp ../course-ref/.github/copilot-instructions.md .github/
-cp ../course-ref/.vscode/settings.json .vscode/
+python ../course-ref/course/m00-setup/bootstrap.py
 ```
 
-Then install the bundle in three steps, one per delivery channel:
+The script does three things (read it: it's short):
+
+1. **Copies the project scaffold files**: `scripts/`, `docs/`, `AGENTS.md`, `CLAUDE.md`, `CODEOWNERS`, `.gitignore`, `.gitattributes`, `.claude/settings.json`, `.github/copilot-instructions.md`, `.vscode/settings.json`. These guardrails live in *your* repo, protected by CODEOWNERS, not by an installer.
+2. **Installs the skills** for both harnesses: `npx skills add DeccansoftAITeam/agent-bundle#v2.0.0 …` → `.claude/skills/`, `.agents/skills/`, `skills-lock.json`.
+3. **Installs org rules, Copilot subagents and hooks** with the bundle's `install.py` → `.agents/`, `.github/agents/`, `.github/hooks/`, `.agents/bundle.lock`.
+
+The fourth delivery channel needs no command. **Claude Code subagents and hooks** come from the `deccansoft-org` plugin, which `.claude/settings.json` already enables:
 
 ```sh
-# 1. Skills for both harnesses → .claude/skills/ and .agents/skills/ + skills-lock.json
-DISABLE_TELEMETRY=1 npx skills add DeccansoftAITeam/agent-bundle#v2.0.0 \
-  --skill '*' -a claude-code -a github-copilot --copy -y
-
-# 2. Org rules, MCP allow-list, Copilot subagents + Copilot audit hook → .agents/bundle.lock
-git clone --depth 1 --branch v2.0.0 https://github.com/DeccansoftAITeam/agent-bundle ../agent-bundle
-python ../agent-bundle/scripts/install.py .
-
-# 3. Claude Code subagents + audit hook: the deccansoft-org plugin.
-#    Nothing to run. .claude/settings.json already registers the marketplace and enables
-#    the plugin, so Claude Code prompts you to install it the first time you open the repo.
 claude      # accept the plugin install prompt, then /exit
 ```
 
@@ -95,7 +79,7 @@ Check that each harness sees the bundle:
 
 - **Claude Code:** `/plugin` shows `deccansoft-org` enabled. Typing `/` lists `grill`, `spec-draft`, `acceptance-tdd`, `migration-writer` and `test-generator`. `/agents` lists `code-reviewer` and `security-reviewer`.
 - **Copilot (Agent mode):** typing `/` lists the same five skills, and the agent picker shows both reviewers.
-- **Drift check:** `python ../agent-bundle/scripts/install.py . --check` exits 0.
+- **Drift check:** clone the bundle once (`git clone --depth 1 --branch v2.0.0 https://github.com/DeccansoftAITeam/agent-bundle ../agent-bundle`), then `python ../agent-bundle/scripts/install.py . --check` exits 0.
 
 ## 5. Your first agent prompt (M1 Pair mode)
 
@@ -125,7 +109,7 @@ Finally, test a guardrail. Ask either agent to `run az account show`. Claude Cod
 git add -A
 git commit -m "chore: initial README"
 git push -u origin main
-git tag m00-done && git push origin m00-done
+git tag m00-done && git push origin m00-done      # your own tag in your repo
 ```
 
 ## Done when

@@ -92,8 +92,7 @@ The gate is TL + PO approval. Sign §13 of the constitution, then commit using t
 
 ```sh
 git add docs
-git commit -m "docs(p0): constitution, C4 context, threat model v2 (grilled)" \
-  -m "Agent-Model: <model>" -m "Agent-Mode: M1" -m "Agent-Session: <id>" -m "Agent-Operator: <you>"
+git commit -m "docs(p0): constitution, C4 context, threat model v2 (grilled)" -m "Agent-Model: <model>" -m "Agent-Mode: M1" -m "Agent-Session: <id>" -m "Agent-Operator: <you>"
 git push && git tag m01-done && git push origin m01-done
 ```
 

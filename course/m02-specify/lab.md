@@ -86,8 +86,7 @@ parallel. Give each a budget and an exact "Files in scope" list.
 
 ```sh
 git add docs
-git commit -m "docs(p1): TD-007 spec (grilled), design, ADR-0001..0003, tasks (approved)" \
-  -m "Agent-Model: <model>" -m "Agent-Mode: M1" -m "Agent-Session: <id>" -m "Agent-Operator: <you>"
+git commit -m "docs(p1): TD-007 spec (grilled), design, ADR-0001..0003, tasks (approved)" -m "Agent-Model: <model>" -m "Agent-Mode: M1" -m "Agent-Session: <id>" -m "Agent-Operator: <you>"
 git push && git tag m02-done && git push origin m02-done
 ```
 
