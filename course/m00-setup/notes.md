@@ -1,5 +1,7 @@
 # M0 — Setup and the Big Picture
 
+> **Prerequisite:** read [Start here](../start-here/README.md). This module assumes you know what skills, subagents, hooks, plugins and the project scaffold are.
+
 **Goal:** know the whole journey before taking the first step, and have a working toolbox.
 
 ## 1. What changes when agents write the code

@@ -50,7 +50,7 @@ From the root of **your** repo:
 python ../course-ref/course/m00-setup/bootstrap.py
 ```
 
-The script does three things (read it: it's short):
+The script does three things (read it: it's short). Background on each route: [Start here → 3. How extensions get installed](../start-here/03-installing-extensions.md).
 
 1. **Copies the project scaffold files**: `scripts/`, `docs/`, `AGENTS.md`, `CLAUDE.md`, `CODEOWNERS`, `.gitignore`, `.gitattributes`, `.claude/settings.json`, `.github/copilot-instructions.md`, `.vscode/settings.json`. These guardrails live in *your* repo, protected by CODEOWNERS, not by an installer.
 2. **Installs the skills** for both harnesses: `npx skills add DeccansoftAITeam/agent-bundle#v2.0.0 …` → `.claude/skills/`, `.agents/skills/`, `skills-lock.json`.
@@ -108,6 +108,7 @@ Finally, test a guardrail. Ask either agent to `run az account show`. Claude Cod
 ```sh
 git add -A
 git commit -m "chore: initial README"
+git branch -M main      # some machines default to 'master'; this renames it
 git push -u origin main
 git tag m00-done && git push origin m00-done      # your own tag in your repo
 ```

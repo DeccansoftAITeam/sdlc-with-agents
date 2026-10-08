@@ -4,9 +4,29 @@
 
 Skills used: **`spec-draft`**, **`grill`**. Run each in either harness, then use the other one for the review in step 5.
 
+
+> **Seeing the reference files.** Your `../course-ref` is checked out at the M0 tag, so later files aren't in it. Read any file at any module's finished state with:
+> ```sh
+> git -C ../course-ref fetch --tags
+> git -C ../course-ref show m02-done:<path>        # e.g. m02-done:docs/constitution.md
+> ```
+> or browse it on GitHub: `https://github.com/DeccansoftAITeam/sdlc-with-agents/blob/m02-done/<path>`.
+
 ## Step 1 — Backlog (10 min)
 
-> 🎩 **Product Owner.** Create `docs/specs/BACKLOG.md` with features TD-001…TD-009 and TD-012, their risk tier, dependencies and build order. Compare with the reference.
+**You write this (Product Owner)**, by hand or with the agent drafting. There's no starter file. Prompt:
+
+```
+Draft docs/specs/BACKLOG.md for TicketDesk from docs/constitution.md:
+a table of features TD-001..TD-009 and TD-012 (CSAT rating, capstone) with
+ID, feature, risk tier (Low/Medium/High), depends on, and build order.
+Include TD-007 "Escalate ticket on SLA breach". One line per feature; no specs yet.
+```
+
+Then check the order and the risk tiers yourself: that's the PO's job, not the agent's.
+
+
+> 🎩 **Product Owner.** Create `docs/specs/BACKLOG.md` with features TD-001…TD-009 and TD-012, their risk tier, dependencies and build order. Compare with the reference: `git -C ../course-ref show m02-done:docs/specs/BACKLOG.md`. (The reference predates the no-email change, so ignore "email verification" in TD-001.)
 
 ## Step 2 — Draft the spec (20 min)
 
@@ -26,7 +46,7 @@ Check the draft: every criterion uses EARS and has an ID; tenant-isolation and "
 Subject: docs/specs/TD-007-sla-breach-escalation/spec.md
 ```
 
-The reference run asked 6 questions ([grill log](../../docs/grill-logs/2026-10-07-td007.md)). Make sure yours reaches these topics, even if it asks in a different order:
+The reference run asked 6 questions (`git -C ../course-ref show m02-done:docs/grill-logs/2026-10-07-td007.md`). Make sure yours reaches these topics, even if it asks in a different order:
 
 - [ ] Calendar vs business time, and whose timezone
 - [ ] Pausing while waiting on the customer
@@ -81,6 +101,9 @@ parallel. Give each a budget and an exact "Files in scope" list.
 ```
 
 ## Step 7 — The gate: approve
+
+> **Who commits?** You do. The agent drafts; humans approve and commit. If you ask the agent to commit, it will (correctly) refuse to commit to `main`: org rules forbid agents from pushing to protected branches. Committing straight to `main` yourself is fine in M1–M2 because your repo has no branch protection yet. M3 turns it on, and from then on every change goes through a PR. *Optional:* practise early by telling the agent "create a branch and commit", then merge the PR yourself.
+
 
 > 🎩 **Tech Lead + Product Owner.** Read `tasks.md` as a contract: *if an agent does exactly this, and only this, do we get TD-007?* Then sign the approval tables in `spec.md`, `design.md` and `tasks.md`.
 

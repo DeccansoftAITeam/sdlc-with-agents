@@ -47,6 +47,20 @@ Rule 4 is what makes a threat model more than a document. `TM-003 cross-tenant r
 
 The agent **drafts**. Humans **decide** and **approve**. An agent-written constitution that nobody challenged is the most expensive file in the repo, because every later task inherits its mistakes.
 
+### When the agent hits a guardrail
+
+While testing this module, an early version of the course **denied** agent edits to `docs/constitution.md` instead of putting them on the **ask** list. The agent's response was the behaviour we want:
+
+> "The project denies agent writes to `docs/constitution.md`, so I won't route around that. I'll save the draft to the scratchpad so a human can put it in place."
+
+It didn't try another tool, a shell command or a renamed file. It **stopped, explained, and handed the decision to a human**. That's org rules §10 in action. The fix was to the *rule* (deny → ask), made by a human through a PR, never by the agent.
+
+| Rule list | Meaning | Use it for |
+|---|---|---|
+| `allow` | Runs without asking | Read-only and routine commands |
+| `ask` | Agent may do it, **you confirm each time** | Files agents draft but humans own: constitution, ADRs, migrations, auth code |
+| `deny` | Never, whatever the prompt says | Gate configs, secrets, deploys, `git push --force` |
+
 ## 5. TicketDesk decisions from intake
 
 | Question | Decision | Consequence |

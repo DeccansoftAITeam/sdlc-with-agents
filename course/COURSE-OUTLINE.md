@@ -26,6 +26,9 @@ Source of truth: Deccansoft SDLC v2 (`dev-workflow-v2`). That folder is a refere
 
 ## Modules
 
+**Start here** (before M0, no installs): [`course/start-here/`](start-here/README.md): big picture, agent building blocks (instructions, skills, subagents, hooks, plugins, MCP, permissions), how extensions are installed (`npx skills`, plugin marketplace, `install.py`), our bundle item by item, a tour of the project scaffold, the three repos, and a glossary.
+
+
 | # | Module | Phase | You build | Standard slice introduced | Tag |
 |---|---|---|---|---|---|
 | M0 | Setup & the big picture | — | Empty repo, tools, **org agent bundle** (rules, 7 skills/subagents, audit hook, permissions) for both harnesses | Principles, agent modes, 5-layer config | `m00-done` |

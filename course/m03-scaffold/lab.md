@@ -3,6 +3,14 @@
 **Time:** about 2 h · **Starts at:** `m02-done` · **Ends at tag:** `m03-done`
 **Skills:** `scaffold` (M1 Pair) · **Needs:** Docker running, access to `DeccansoftAITeam/project-scaffold` and `agent-bundle`
 
+
+> **Seeing the reference files.** Your `../course-ref` is checked out at the M0 tag, so later files aren't in it. Read any file at any module's finished state with:
+> ```sh
+> git -C ../course-ref fetch --tags
+> git -C ../course-ref show m03-done:<path>        # e.g. m03-done:docs/constitution.md
+> ```
+> or browse it on GitHub: `https://github.com/DeccansoftAITeam/sdlc-with-agents/blob/m03-done/<path>`.
+
 ## Step 1 — Let the agent derive the answers (15 min)
 
 ```
