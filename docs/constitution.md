@@ -13,7 +13,7 @@
 
 ## 1. Purpose
 
-TicketDesk lets companies (**tenants**) run customer support. Any company can sign up on its own (self-serve); whoever creates the tenant becomes its first admin, and must verify their email before inviting staff. Their customers raise tickets, and their support staff work a shared queue against SLA targets. AI suggests a category and priority for each new ticket and drafts replies from the tenant's own help articles. A human decides before anything reaches a customer.
+TicketDesk lets companies (**tenants**) run customer support. Any company can sign up on its own (self-serve); whoever creates the tenant becomes its first admin. The app is **self-contained**: no email and no third-party services, except the AI gateway. Admins bring people in with one-time links they copy and share themselves.
 
 ## 2. Principles
 
@@ -33,7 +33,8 @@ TicketDesk lets companies (**tenants**) run customer support. Any company can si
 - SSO / external identity providers (no Entra ID, no OAuth login) in v1.
 - Autonomous AI actions: no auto-reply, auto-close, auto-assign or automatic priority changes.
 - File attachments (v1).
-- Notification email. SLA-breach and other notifications are in-app only. Email is used **only** for account verification and password reset.
+- **Email of any kind** (notifications, verification, password reset). Notifications are in-app; invites and password resets use one-time links an admin copies and shares.
+- **Third-party services other than the AI gateway** (no email provider, no breached-password API, no external identity provider). Keeps the teaching project self-contained.
 - Subdomain or custom domain per tenant.
 
 ## 4. Stack & deviations
@@ -48,7 +49,7 @@ TicketDesk lets companies (**tenants**) run customer support. Any company can si
 | LLM provider | via LiteLLM gateway | Azure OpenAI (Foundry) `gpt-4.1-mini`, `text-embedding-3-small` via **Azure APIM AI gateway** | ADR-0001 (M2) |
 | Auth | — | Self-issued JWT (access 15 min, rotating refresh 7 days) | ADR-0002 (M2) |
 | Multi-tenancy | — | Shared DB, `tenant_id` on every row + Postgres RLS; path-slug routing `/t/{slug}` | ADR-0003 (M2) |
-| Email | — | Azure Communication Services Email, auth messages only (verify, reset) | — |
+| External services | — | **Only** the Azure APIM AI gateway (ADR-0001). Nothing else leaves the system | — |
 
 ## 5. Data sensitivity
 
@@ -155,5 +156,6 @@ Error-budget policy: when a budget is exhausted, feature work pauses until it re
 | Date | Change | PR |
 |---|---|---|
 | 2026-10-06 | Initial | M1 |
+| 2026-10-08 | **No email, no third-party services except the AI gateway** (PO). Signup is immediate; staff join via admin-copied invite links; resets via admin-issued one-time links; breached-password API replaced by a bundled common-password list | M4 |
 | 2026-10-07 | SLA clock rules footnote (TD-007 grill Q1, Q2, Q6) | M2 |
 | 2026-10-07 | Grilled (Q1–Q9): self-serve signup, per-tenant identity, slug routing, no attachments, in-app notifications, auth-only email, AI opt-in, per-tenant AI caps | M1 |

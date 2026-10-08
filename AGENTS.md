@@ -20,7 +20,7 @@ Self-serve multi-tenant SaaS: companies (tenants) run customer support; customer
 - **Least data in prompts.** Mask PII before any LLM call; LLM calls only via the APIM gateway (ADR-0001).
 - **No PII in logs or traces.** Log ids, not content.
 
-**Non-goals (don't build these):** email ingestion, notification email (auth email only), attachments, SSO, billing, mobile, AI auto-actions, per-tenant subdomains.
+**Non-goals (don't build these):** **any email**, **any third-party service except the AI gateway**, attachments, SSO, billing, mobile, AI auto-actions, per-tenant subdomains.
 
 ## Stack
 
