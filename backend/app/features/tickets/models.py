@@ -13,7 +13,6 @@ from sqlalchemy import (
     DateTime,
     ForeignKeyConstraint,
     Index,
-    Integer,
     Text,
     UniqueConstraint,
     text,
@@ -63,7 +62,7 @@ class Ticket(TenantOwned, Timestamped, Base):
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, server_default=text("gen_random_uuid()")
     )
-    number: Mapped[int] = mapped_column(Integer)
+    number: Mapped[int] = mapped_column(BigInteger)  # matches ticket_counters.last_number (squawk)
     subject: Mapped[str] = mapped_column(Text)
     status: Mapped[str] = mapped_column(Text, server_default=text("'new'"))
     priority: Mapped[str] = mapped_column(Text, server_default=text("'P3'"))

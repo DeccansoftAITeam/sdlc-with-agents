@@ -34,7 +34,7 @@ def upgrade() -> None:
     op.create_table(
         "tickets",
         sa.Column("id", sa.UUID(), server_default=sa.text("gen_random_uuid()"), nullable=False),
-        sa.Column("number", sa.Integer(), nullable=False),
+        sa.Column("number", sa.BigInteger(), nullable=False),
         sa.Column("subject", sa.Text(), nullable=False),
         sa.Column("status", sa.Text(), server_default=sa.text("'new'"), nullable=False),
         sa.Column("priority", sa.Text(), server_default=sa.text("'P3'"), nullable=False),
