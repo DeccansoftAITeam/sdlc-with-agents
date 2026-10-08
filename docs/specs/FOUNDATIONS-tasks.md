@@ -12,23 +12,13 @@ Shared rules for every task: branch `agent/<task-id>-<slug>`; acceptance tests f
 |---|---|---|---|---|---|---|
 | T-001-01 Tenant + user + token tables, RLS | — | M2 · `migration-writer` | **High** | `backend/app/features/auth/{__init__,models}.py`, `backend/migrations/versions/*_td001_*`, `backend/tests/migrations/**` | 60 steps · 30 min | M3 |
 | T-001-02 Signup + password policy | TD-001/AC-1,2,3 | M2 · `acceptance-tdd` | **High** | `backend/app/features/auth/{signup,router,schemas,passwords,service}*.py`, `backend/app/features/auth/common_passwords.txt`, `backend/app/main.py`, `backend/pyproject.toml`, `backend/uv.lock`, `backend/tests/conftest.py`, `backend/tests/features/**` | 200 · 60 min | T-001-01 |
-| T-001-03 Login, JWT, refresh rotation, rate limits | TD-001/AC-4,5,6,7,8,12 | **M1** · `acceptance-tdd` | **High** | `backend/app/features/auth/{login,tokens,ratelimit}*.py`, `backend/app/core/security.py`, `backend/app/core/tenancy.py`, tests | — | T-001-02 |
-| T-001-04 ~~Password reset~~ | — | — | — | Removed 2026-10-08: resets are admin-issued links, now TD-002/AC-9 in T-002-01 | — | — |
-| T-001-05 Web: signup, login, reset-link pages | TD-001 E2E | M2 · `acceptance-tdd` | Medium | `apps/web/src/app/(auth)/**`, `apps/web/src/app/t/[slug]/(auth)/**`, `apps/web/e2e/auth.spec.ts` | 150 · 60 min | T-002-01 |
-| T-002-01 Roles, invites, customer registration, audit helper | TD-002/AC-1…9 | M2 · `acceptance-tdd` (+ `migration-writer` for the invites table) | **High** | `backend/app/features/users/**`, `backend/app/core/audit.py`, `backend/migrations/versions/*_td002_*`, tests | 200 · 60 min | T-001-03 |
-| T-003-01 Tickets model, create, queue, view API | TD-003/AC-1…6,8 | M2 · `acceptance-tdd` | Medium | `backend/app/features/tickets/**`, `backend/migrations/versions/*_td003_*`, tests, `packages/core/src/generated/**` | 200 · 60 min | T-002-01 |
-| T-003-02 Web: create, queue, view (sanitized markdown) | TD-003/AC-7,9 | M2 · `acceptance-tdd` | Medium | `apps/web/src/features/tickets/**`, `apps/web/e2e/tickets.spec.ts` | 150 · 60 min | T-003-01 |
-| T-004-01 Messages, notes, status machine, assignment, audit | TD-004/AC-1…6,8 | M2 · `acceptance-tdd` | Medium | `backend/app/features/tickets/{workflow,messages}*.py`, migration `*_td004_*`, tests | 200 · 60 min | T-003-01 |
-| T-005-01 `compute_deadlines` (pure, property-based) | TD-005/AC-3…6 | **M1** · `acceptance-tdd` | Medium | `backend/app/features/sla/deadlines.py`, `backend/tests/features/sla/test_deadlines.py` | — | M3 |
-| T-005-02 SLA settings + deadline storage + recompute hooks | TD-005/AC-1,2,7; TD-004/AC-7 | M2 · `acceptance-tdd` | Medium | `backend/app/features/sla/{settings,service}.py`, migration `*_td005_*`, tests | 200 · 60 min | T-004-01, T-005-01 |
-| T-006-01 Notifications API + `notify()` + retention | TD-006/AC-1,2,3,5,6,7 | M2 · `acceptance-tdd` | Low | `backend/app/features/notifications/**`, migration `*_td006_*`, tests | 150 · 45 min | T-002-01 |
-| T-006-02 Web: bell + unread count | TD-006/AC-4 | M2 · `acceptance-tdd` | Low | `apps/web/src/features/notifications/**`, `apps/web/e2e/notifications.spec.ts` | 100 · 30 min | T-006-01 |
+| **A** T-001-03 Login, JWT, refresh rotation, rate limits | TD-001/AC-4,5,6,7,8,12 | M2 · `acceptance-tdd` | **High** | `backend/app/core/{security,ratelimit,config}.py`, `backend/app/features/auth/**`, `backend/app/main.py`, `backend/pyproject.toml`, `backend/uv.lock`, `backend/tests/**`, `docs/specs/**` | 200 · 60 min | T-001-02 |
+| **B** T-002-01 Roles + customer registration (minimal) | TD-002/AC-3,4,5,6,7,8,10 | M2 · `acceptance-tdd` | **High** | `backend/app/features/users/**`, `backend/app/core/audit.py`, `backend/migrations/versions/*_td002_*`, `backend/app/main.py`, `backend/tests/**` | 200 · 60 min | A |
+| **C** T-003/004 Tickets API + workflow + audit | TD-003/AC-1…6,8; TD-004/AC-1…6,8 | M2 · `acceptance-tdd` | Medium | `backend/app/features/tickets/**`, `backend/migrations/versions/*_td003_*`, `backend/app/main.py`, `backend/tests/**` | 200 · 60 min | B |
+| **D** T-005/006 SLA clocks + notifications API | TD-005/AC-1…7; TD-006/AC-1,2,3,5,6,7; TD-004/AC-7 | M2 · `acceptance-tdd` | Medium | `backend/app/features/{sla,notifications}/**`, `backend/app/features/tickets/**`, `backend/migrations/versions/*_td00[56]_*`, `backend/app/main.py`, `backend/tests/**` | 200 · 60 min | C |
+| → tag **`m04-start`** | | | | | | D |
+| **E** TD-007 (all of `TD-007-*/tasks.md`) | TD-007/AC-1…14 | M2 · `acceptance-tdd` (+ `migration-writer`) | Medium | see TD-007 `tasks.md` | — | `m04-start` |
 
-**Parallel lanes** (one per harness, each in its own `treehouse` worktree):
-- Lane A (Claude Code): T-001-* → T-002-01 → T-003-01 → T-004-01 → T-005-02
-- Lane B (Copilot): T-005-01 (no dependencies) → T-006-01 (after T-002-01) → web tasks
-
-**Why T-001-03 and T-005-01 are M1 (Pair), not M2:** token handling and the deadline maths are where subtle bugs hide. A human drives these interactively instead of reviewing a finished PR.
 
 ## Scope amendments
 
@@ -38,6 +28,7 @@ Shared rules for every task: branch `agent/<task-id>-<slug>`; acceptance tests f
 | 2026-10-08 | T-001-02 | + router, schemas, passwords, service modules; `main.py` (wire router); `core/config.py` (email + web URL settings); `pyproject.toml`/`uv.lock` (new deps: argon2-cffi, email-validator, httpx); `tests/conftest.py`; `tests/features/**` | The brief-grilled scope listed only the core modules; a feature needs routing, schemas, wiring and fixtures. Dependencies are proposed in this PR (org rules §3.6) | TL, via PR review |
 | 2026-10-08 | T-001-02 → T-002-01 | TD-001/AC-11 (unverified admin can't invite or enable AI) moved | The guarded endpoints are built in T-002-01; testing a guard without its endpoint would be a fake test | TL, via PR review |
 | 2026-10-08 | **All** | **Requirements change (PO): no email, no third-party services except AI.** T-001-02 reduced to signup + password policy (verification, email port, HIBP removed); T-001-04 removed; invites and resets become admin-issued links in T-002-01 (TD-002/AC-1, AC-9) | Keep the teaching project simple and self-contained | PO + TL, via PR review |
+| 2026-10-08 | **All** | **Compressed for teaching (PO): the course is about the SDLC, not the product.** 16 remaining tasks → 5 PRs (A–E). Deferred to v2: invite/reset links (TD-002/AC-1,2,9; TD-001/AC-10) replaced by admins creating accounts directly (TD-002/AC-10); all web UI for TD-001…006 (T-001-05, T-003-02, T-006-02; TD-003/AC-7,9; TD-006/AC-4). A minimal web slice returns in M6 for E2E smoke. Learners build only TD-007 in the M4 lab, starting from `m04-start` | PO + TL, via PR A review |
 
 ## Approval
 

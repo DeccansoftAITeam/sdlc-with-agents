@@ -31,7 +31,7 @@ FastAPI · SQLAlchemy 2.0 async · Alembic · PostgreSQL + pgvector · Next.js �
 ```sh
 docker compose up -d db                   # local Postgres + pgvector; roles from db/init/
 cd backend && uv sync && uv run alembic upgrade head
-uv run uvicorn app.main:app --reload      # API on :8000
+JWT_EPHEMERAL_KEY=true uv run uvicorn app.main:app --reload   # API on :8000 (local-only in-memory signing key)
 uv run pytest -q                          # tests + coverage ≥ 80% + architecture tests
 cd .. && pnpm install && pnpm dev:web     # web on :3000 (proxies /api → :8000)
 pnpm typecheck && pnpm test

@@ -4,10 +4,14 @@ The schema is migrated once per session as the OWNER role; tests then talk to
 the database as the APP role, exactly like production, so RLS is really enforced.
 """
 
+import os
 import subprocess
 import sys
 from collections.abc import AsyncIterator
 from pathlib import Path
+
+# Must be set before the app is imported: the app checks its signing key at startup.
+os.environ.setdefault("JWT_EPHEMERAL_KEY", "true")  # tests sign with an in-memory key
 
 import httpx
 import pytest
@@ -37,6 +41,16 @@ async def app_engine() -> AsyncIterator[AsyncEngine]:
     engine = create_async_engine(get_settings().database_url)
     yield engine
     await engine.dispose()
+
+
+@pytest.fixture(autouse=True)
+def _reset_rate_limits() -> None:
+    """Rate-limit state is process-wide; every test starts with a clean slate."""
+    try:
+        from app.core import ratelimit
+    except ImportError:  # before T-001-03 exists
+        return
+    ratelimit.reset()
 
 
 @pytest.fixture
