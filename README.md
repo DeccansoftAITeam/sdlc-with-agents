@@ -17,4 +17,6 @@ Each module is one SDLC phase. Every module folder in `course/` has:
 - `lab.md`: what you do, including the exact agent prompts.
 - a git tag `mNN-done`: the finished state. If you fall behind, run `git checkout mNN-done`.
 
+**Shell:** labs use bash. On Windows use **Git Bash** (comes with Git).
+
 Start at [`course/m00-setup`](course/m00-setup/notes.md). The full module plan is in [`course/COURSE-OUTLINE.md`](course/COURSE-OUTLINE.md).
