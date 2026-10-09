@@ -19,6 +19,8 @@ from app.core.db import tenant_session
 from app.core.errors import ProblemError
 from app.core.security import Principal
 from app.features.auth.models import Role, User
+from app.features.notifications.service import notify
+from app.features.sla import service as sla
 from app.features.tickets import workflow
 from app.features.tickets.models import Ticket, TicketMessage
 from app.features.tickets.schemas import MessageIn, TicketCreateIn, TicketPatchIn
@@ -68,12 +70,35 @@ async def _audit_change(
     )
 
 
+def _recompute_deadlines(ticket: Ticket) -> None:
+    """TD-004/AC-7, TD-005/AC-7: the only place stored deadlines change."""
+    if ticket.sla_policy is None:  # created before td005a: no SLA to track
+        return
+    due = sla.deadlines(ticket.sla_policy, ticket.created_at, ticket.priority, ticket.paused_intervals)
+    ticket.first_response_due_at = due.first_response_due_at
+    ticket.resolution_due_at = due.resolution_due_at
+
+
+def _track_pause(ticket: Ticket, old: str, new: str, now: str) -> None:
+    """Open a pause on entering pending_customer, close it on leaving (TD-005/AC-5)."""
+    pauses = [list(p) for p in ticket.paused_intervals]  # new list: JSONB changes must be reassigned
+    if new == "pending_customer":
+        pauses.append([now, None])
+    elif old == "pending_customer" and pauses and pauses[-1][1] is None:
+        pauses[-1][1] = now
+    ticket.paused_intervals = pauses
+
+
 async def _set_status(s: AsyncSession, who: Principal, ticket: Ticket, new: str) -> None:
     if new == ticket.status:
         return
     await _audit_change(s, who, ticket, "status", ticket.status, new)
+    # Database clock, like created_at, so pauses and creation never disagree (code review).
+    now = (await s.execute(text("SELECT clock_timestamp()"))).scalar_one().isoformat()
+    _track_pause(ticket, ticket.status, new, now)
     ticket.status = new
     ticket.resolved_at = func.now() if new == "resolved" else None
+    _recompute_deadlines(ticket)
 
 
 async def create(who: Principal, data: TicketCreateIn) -> Ticket:
@@ -93,9 +118,13 @@ async def create(who: Principal, data: TicketCreateIn) -> Ticket:
             priority=priority,
             category=category,
             requester_id=requester,
+            sla_policy=await sla.policy(s),  # snapshot: later policy edits don't move it (TD-005/AC-2)
+            paused_intervals=[],
         )
         s.add(ticket)
         await s.flush()
+        await s.refresh(ticket)  # created_at comes from the database clock
+        _recompute_deadlines(ticket)
         s.add(
             TicketMessage(
                 tenant_id=who.tenant_id,
@@ -222,12 +251,25 @@ async def update(who: Principal, number: int, change: TicketPatchIn) -> Ticket:
                 )
             await _audit_change(s, who, ticket, "assignee", ticket.assignee_id, change.assignee_id)
             ticket.assignee_id = change.assignee_id
+            if change.assignee_id not in (None, who.user_id):  # TD-006/AC-5; no self-notify
+                await notify(
+                    s,
+                    who.tenant_id,
+                    [change.assignee_id],
+                    "ticket_assigned",
+                    ticket.id,
+                    {"number": ticket.number, "subject": ticket.subject},
+                    # Unique per assignment: each (re)assignment is news, so no dedupe here.
+                    f"assigned:{ticket.id}:{uuid.uuid4().hex}",
+                )
             await _set_status(s, who, ticket, workflow.after_staff_activity(ticket.status))
         for field in ("priority", "category"):
             new = getattr(change, field)
             if field in fields and new != getattr(ticket, field) and (field == "category" or new is not None):
                 await _audit_change(s, who, ticket, field, getattr(ticket, field), new)
                 setattr(ticket, field, new)
+                if field == "priority":
+                    _recompute_deadlines(ticket)
         if target is not None:
             await _set_status(s, who, ticket, target)  # no-op when already there
         await s.flush()

@@ -56,6 +56,8 @@ class TicketOut(BaseModel):
     assignee_id: uuid.UUID | None
     first_replied_at: datetime | None
     resolved_at: datetime | None
+    first_response_due_at: datetime | None
+    resolution_due_at: datetime | None
     created_at: datetime
 
 

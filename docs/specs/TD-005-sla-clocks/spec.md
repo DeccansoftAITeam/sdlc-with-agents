@@ -19,6 +19,8 @@
 | TD-005/AC-6 | The function shall be correct across DST transitions and week boundaries (property-based tests: monotonic in duration; deadline never inside non-working time for P2â€“P4). | unit (Hypothesis) |
 | TD-005/AC-7 | When a ticket is created, changes priority, enters or leaves `pending_customer`, or is reopened, the system shall store the recomputed deadlines. | integration |
 
+**Implementation note (PR D, code review):** AC-1 is met without a write at signup: a tenant with no `tenant_sla_settings` row uses the constitution §8 defaults, so the observable behaviour is the same. Targets are stored in minutes; 1 business day = 540 min. Settings whose resolution target can't be reached within 150 weeks of the schedule are rejected (422).
+
 ## Out of scope
 
 Holiday calendars, per-customer SLAs, SLA reports (later).
