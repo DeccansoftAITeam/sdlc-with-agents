@@ -35,7 +35,7 @@ Source of truth: Deccansoft SDLC v2 (`dev-workflow-v2`). That folder is a refere
 | M1 | Intake & constitution | P0 | `constitution.md`, NFRs/SLOs, ASVS level, AI intake, first threat model, C4 context | `templates/constitution.md`, `threat-model.md` | `m01-done` |
 | M2 | Spec, grill, design, plan | P1 | `spec.md` (EARS) for MVP + TD-007, `design.md`, 2 ADRs, `tasks.md` | spec/design/tasks/adr templates, grilling | `m02-done` |
 | M3 | Scaffold | P2 | Generate TicketDesk from **`project-scaffold`** (Copier) with the `scaffold` skill: monorepo, RLS tenancy + isolation tests, local gate hooks, PR gate, project `AGENTS.md`; scope-guard hook | Scaffold, `copier update` | `m03-done` |
-| M4 | Implement test-first with agents | P3 | Tickets CRUD + auth: acceptance tests written first, then Claude (M2) and Copilot (M1) build | Agent operating model, forbidden actions, risk tiers | `m04-done` |
+| M4 | Implement test-first with agents | P3 | **TD-007** from `m04-start` (foundations TD-001…006 prebuilt): acceptance tests first, scope guard, reviewer subagents, PR approved by someone else | Agent operating model, forbidden actions, risk tiers | `m04-done` |
 | M5 | Local gate | P4 | pre-commit/pre-push under 90 s: secrets, ruff, mypy, import-linter, affected tests | `05-QUALITY-GATES` LOCAL | `m05-done` |
 | M6 | PR gate & review | P5â€“P7 | `pr-gate.yml` under 10 min, contract tests, migration lint, agent review pass, human approval, merge queue, preview env | PR layer, review flow, branch rules | `m06-done` |
 | M7 | The AI feature | P3 (AI path) | APIM AI gateway, triage + RAG, prompts as files, evals with thresholds, guardrails, kill-switch | `08-AI-FEATURE-STANDARD` | `m07-done` |
