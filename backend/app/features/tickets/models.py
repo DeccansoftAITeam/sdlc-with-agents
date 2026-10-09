@@ -58,6 +58,21 @@ class Ticket(TenantOwned, Timestamped, Base):
         Index("ix_tickets_queue", "tenant_id", "created_at", "id"),
         Index("ix_tickets_requester", "tenant_id", "requester_id"),
         Index("ix_tickets_assignee", "tenant_id", "assignee_id"),
+        # TD-007 sweep (design section 3), created CONCURRENTLY in td007a.
+        Index(
+            "ix_tickets_sla_due",
+            "tenant_id",
+            "first_response_due_at",
+            postgresql_where=text("first_response_breached_at IS NULL AND first_replied_at IS NULL"),
+        ),
+        Index(
+            "ix_tickets_res_due",
+            "tenant_id",
+            "resolution_due_at",
+            postgresql_where=text(
+                "resolution_breached_at IS NULL AND status NOT IN ('resolved', 'pending_customer')"
+            ),
+        ),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(
@@ -80,6 +95,9 @@ class Ticket(TenantOwned, Timestamped, Base):
     )
     first_response_due_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     resolution_due_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # TD-007: permanent breach history, set once by the sweep, never cleared.
+    first_response_breached_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    resolution_breached_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 
 class TicketMessage(TenantOwned, Timestamped, Base):

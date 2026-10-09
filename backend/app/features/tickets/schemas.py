@@ -45,6 +45,12 @@ class MessageOut(BaseModel):
     created_at: datetime
 
 
+class BreachOut(BaseModel):
+    type: Literal["first_response", "resolution"]
+    breached_at: datetime
+    active: bool  # still needs action, so the ticket floats and shows a badge (TD-007)
+
+
 class TicketOut(BaseModel):
     id: uuid.UUID
     number: int
@@ -58,7 +64,10 @@ class TicketOut(BaseModel):
     resolved_at: datetime | None
     first_response_due_at: datetime | None
     resolution_due_at: datetime | None
+    first_response_breached_at: datetime | None
+    resolution_breached_at: datetime | None
     created_at: datetime
+    breach: BreachOut | None = None
 
 
 class TicketDetailOut(TicketOut):

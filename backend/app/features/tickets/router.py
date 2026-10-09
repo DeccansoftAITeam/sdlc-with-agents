@@ -22,8 +22,9 @@ from app.features.users.deps import Member
 router = APIRouter(tags=["tickets"])
 
 
-def _out(model: type[TicketOut], obj: object, **extra: object) -> TicketOut:
-    return model.model_validate({**{k: getattr(obj, k) for k in TicketOut.model_fields}, **extra})
+def _out(model: type[TicketOut], obj: object, escalating: bool = False, **extra: object) -> TicketOut:
+    fields = {k: getattr(obj, k) for k in TicketOut.model_fields if k != "breach"}
+    return model.model_validate({**fields, "breach": service.breach_view(obj, escalating), **extra})  # type: ignore[arg-type]
 
 
 @router.post("/t/{slug}/tickets", status_code=status.HTTP_201_CREATED)
@@ -44,7 +45,7 @@ async def list_tickets(
     items, next_cursor = await service.queue(
         who, status=status_, priority=priority, assignee_id=assignee_id, cursor=cursor, limit=limit
     )
-    return TicketPage(items=[_out(TicketOut, t) for t in items], next_cursor=next_cursor)
+    return TicketPage(items=[_out(TicketOut, t, active) for t, active in items], next_cursor=next_cursor)
 
 
 @router.get("/t/{slug}/tickets/{number}")
@@ -53,7 +54,8 @@ async def get_ticket(slug: str, number: int, who: Member) -> TicketDetailOut:
     # dropped `messages` from the response (caught by the AC-3 acceptance test).
     ticket, messages = await service.get(who, number)
     msgs = [MessageOut.model_validate(m, from_attributes=True) for m in messages]
-    detail = _out(TicketDetailOut, ticket, messages=msgs)
+    escalating = await service.breach_escalation_on(who)
+    detail = _out(TicketDetailOut, ticket, escalating, messages=msgs)
     assert isinstance(detail, TicketDetailOut)
     return detail
 
@@ -65,4 +67,5 @@ async def add_message(slug: str, number: int, body: MessageIn, who: Member) -> M
 
 @router.patch("/t/{slug}/tickets/{number}")
 async def update_ticket(slug: str, number: int, body: TicketPatchIn, who: Member) -> TicketOut:
-    return _out(TicketOut, await service.update(who, number, body))
+    ticket = await service.update(who, number, body)
+    return _out(TicketOut, ticket, await service.breach_escalation_on(who))
