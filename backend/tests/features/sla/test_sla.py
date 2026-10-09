@@ -161,4 +161,7 @@ async def test_td005_ac7_reopen_recomputes_without_restarting(client: httpx.Asyn
     reopened = (await client.get(url, headers=sam)).json()
     assert reopened["status"] == "open"
     assert reopened["first_response_due_at"] == t["first_response_due_at"]  # counted from creation
-    assert reopened["resolution_due_at"] == t["resolution_due_at"]
+    # TD-007/AC-11: time spent resolved isn't consumed, so the deadline moves out by exactly
+    # that pause (milliseconds here), never back to a fresh 8 hours.
+    shift = ts(reopened["resolution_due_at"]) - ts(t["resolution_due_at"])
+    assert timedelta(0) < shift < timedelta(minutes=1)

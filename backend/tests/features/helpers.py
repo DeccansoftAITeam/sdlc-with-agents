@@ -58,3 +58,13 @@ async def customer(
     )
     assert r.status_code == 201, r.text
     return r.json()["id"], await auth(client, slug, email, USER_PASSWORD)
+
+
+def claims(headers: dict[str, str]) -> tuple[uuid.UUID, uuid.UUID]:
+    """(tenant id, user id) from an access token; tests only, so no signature check."""
+    import base64
+    import json
+
+    payload = headers["Authorization"].split()[1].split(".")[1]
+    data = json.loads(base64.urlsafe_b64decode(payload + "=" * (-len(payload) % 4)))
+    return uuid.UUID(data["tid"]), uuid.UUID(data["sub"])

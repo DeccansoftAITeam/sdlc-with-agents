@@ -8,10 +8,10 @@ tickets they requested, and never internal notes. A ticket a caller may not see 
 import base64
 import binascii
 import uuid
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
-from sqlalchemy import func, select, text, tuple_
+from sqlalchemy import ColumnElement, and_, case, func, literal, or_, select, text, tuple_
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core import audit
@@ -19,6 +19,7 @@ from app.core.db import tenant_session
 from app.core.errors import ProblemError
 from app.core.security import Principal
 from app.features.auth.models import Role, User
+from app.features.flags import service as flags
 from app.features.notifications.service import notify
 from app.features.sla import service as sla
 from app.features.tickets import workflow
@@ -79,13 +80,23 @@ def _recompute_deadlines(ticket: Ticket) -> None:
     ticket.resolution_due_at = due.resolution_due_at
 
 
+# Statuses that stop the resolution clock: waiting on the customer (TD-005/AC-5) and
+# resolved, so a reopened ticket resumes from the time already consumed (TD-007/AC-11).
+PAUSING = ("pending_customer", "resolved")
+
+
 def _track_pause(ticket: Ticket, old: str, new: str, now: str) -> None:
-    """Open a pause on entering pending_customer, close it on leaving (TD-005/AC-5)."""
+    """Open a pause on entering a pausing status, close it on leaving them all."""
     pauses = [list(p) for p in ticket.paused_intervals]  # new list: JSONB changes must be reassigned
-    if new == "pending_customer":
+    if new in PAUSING and old not in PAUSING:
         pauses.append([now, None])
-    elif old == "pending_customer" and pauses and pauses[-1][1] is None:
-        pauses[-1][1] = now
+    elif old in PAUSING and new not in PAUSING:
+        if pauses and pauses[-1][1] is None:
+            pauses[-1][1] = now
+        elif old == "resolved" and ticket.resolved_at is not None:
+            # Resolved before td007 recorded resolve-pauses: the pause began at resolved_at
+            # (code review: else reopening an old ticket breaches it at once).
+            pauses.append([ticket.resolved_at.isoformat(), now])
     ticket.paused_intervals = pauses
 
 
@@ -139,17 +150,35 @@ async def create(who: Principal, data: TicketCreateIn) -> Ticket:
         return ticket
 
 
-def _encode_cursor(t: Ticket) -> str:
-    return base64.urlsafe_b64encode(f"{t.created_at.isoformat()}|{t.number}".encode()).decode()
+FAR_FUTURE = datetime(9999, 1, 1, tzinfo=UTC)  # sorts "not breach-active" last
 
 
-def _decode_cursor(cursor: str) -> tuple[datetime, int]:
+def breach_active_at() -> ColumnElement[datetime]:
+    """TD-007 design section 5: earliest breach that still needs action, else FAR_FUTURE."""
+    unresolved = Ticket.status != "resolved"
+    return func.coalesce(
+        func.least(
+            case(
+                (and_(Ticket.first_replied_at.is_(None), unresolved), Ticket.first_response_breached_at),
+            ),
+            case((unresolved, Ticket.resolution_breached_at)),
+        ),
+        FAR_FUTURE,
+    )
+
+
+def _encode_cursor(t: Ticket, active_at: datetime) -> str:
+    raw = f"{active_at.isoformat()}|{t.created_at.isoformat()}|{t.number}"
+    return base64.urlsafe_b64encode(raw.encode()).decode()
+
+
+def _decode_cursor(cursor: str) -> tuple[datetime, datetime, int]:
     try:
-        created, number = base64.urlsafe_b64decode(cursor.encode()).decode().split("|")
-        when = datetime.fromisoformat(created)
-        if when.tzinfo is None:
-            raise ValueError("cursor timestamp must be timezone-aware")
-        return when, int(number)
+        active, created, number = base64.urlsafe_b64decode(cursor.encode()).decode().split("|")
+        when, at = datetime.fromisoformat(created), datetime.fromisoformat(active)
+        if when.tzinfo is None or at.tzinfo is None:
+            raise ValueError("cursor timestamps must be timezone-aware")
+        return at, when, int(number)
     except (ValueError, binascii.Error, UnicodeDecodeError):
         raise ProblemError(422, "Invalid cursor") from None
 
@@ -162,23 +191,58 @@ async def queue(
     assignee_id: uuid.UUID | None,
     cursor: str | None,
     limit: int,
-) -> tuple[list[Ticket], str | None]:
-    q = select(Ticket)
-    if not is_staff(who):
-        q = q.where(Ticket.requester_id == who.user_id)  # TD-003/AC-5
-    if status:
-        q = q.where(Ticket.status == status)
-    if priority:
-        q = q.where(Ticket.priority == priority)
-    if assignee_id:
-        q = q.where(Ticket.assignee_id == assignee_id)
-    if cursor:
-        q = q.where(tuple_(Ticket.created_at, Ticket.number) < tuple_(*_decode_cursor(cursor)))
-    q = q.order_by(Ticket.created_at.desc(), Ticket.number.desc()).limit(limit + 1)
+) -> tuple[list[tuple[Ticket, bool]], str | None]:
+    """Breach-active tickets first, earliest breach first (TD-007/AC-3), only while the
+    tenant's flag is on (AC-14); then newest first. Returns (ticket, breach_active) pairs."""
     async with tenant_session(who.tenant_id) as s:
-        rows = list((await s.execute(q)).scalars())
+        escalating = await flags.is_enabled(s, flags.SLA_BREACH_ESCALATION)
+        active = breach_active_at() if escalating else literal(FAR_FUTURE)
+        q = select(Ticket, active.label("active_at"))
+        if not is_staff(who):
+            q = q.where(Ticket.requester_id == who.user_id)  # TD-003/AC-5
+        if status:
+            q = q.where(Ticket.status == status)
+        if priority:
+            q = q.where(Ticket.priority == priority)
+        if assignee_id:
+            q = q.where(Ticket.assignee_id == assignee_id)
+        if cursor:
+            c_active, c_created, c_number = _decode_cursor(cursor)
+            q = q.where(
+                or_(
+                    active > c_active,
+                    and_(
+                        active == c_active,
+                        tuple_(Ticket.created_at, Ticket.number) < tuple_(c_created, c_number),
+                    ),
+                )
+            )
+        q = q.order_by(active.asc(), Ticket.created_at.desc(), Ticket.number.desc()).limit(limit + 1)
+        rows = [(t, at) for t, at in (await s.execute(q)).all()]
     page, more = rows[:limit], len(rows) > limit
-    return page, (_encode_cursor(page[-1]) if more else None)
+    next_cursor = _encode_cursor(*page[-1]) if more else None
+    return [(t, at != FAR_FUTURE) for t, at in page], next_cursor
+
+
+def breach_view(ticket: Ticket, escalating: bool) -> dict[str, Any] | None:
+    """The `breach` DTO field (TD-007 design section 6): the earliest breach, and whether it
+    still needs action. History is always shown; `active` needs the flag on (AC-14)."""
+    unresolved = ticket.status != "resolved"
+    candidates = [
+        ("first_response", ticket.first_response_breached_at, unresolved and ticket.first_replied_at is None),
+        ("resolution", ticket.resolution_breached_at, unresolved),
+    ]
+    breached = [(at, kind, needs_action) for kind, at, needs_action in candidates if at is not None]
+    if not breached:
+        return None
+    live = [b for b in breached if b[2]]
+    at, kind, needs_action = min(live or breached)
+    return {"type": kind, "breached_at": at, "active": escalating and needs_action}
+
+
+async def breach_escalation_on(who: Principal) -> bool:
+    async with tenant_session(who.tenant_id) as s:
+        return await flags.is_enabled(s, flags.SLA_BREACH_ESCALATION)
 
 
 async def _visible(s: AsyncSession, who: Principal, number: int, *, lock: bool = False) -> Ticket:
