@@ -71,6 +71,7 @@ def upgrade() -> None:
             ["tenant_id", "first_response_due_at"],
             postgresql_where=sa.text("first_response_breached_at IS NULL AND first_replied_at IS NULL"),
             postgresql_concurrently=True,
+            if_not_exists=True,  # rerunnable if a concurrent build fails part way (squawk)
         )
         op.create_index(
             "ix_tickets_res_due",
@@ -80,13 +81,18 @@ def upgrade() -> None:
                 "resolution_breached_at IS NULL AND status NOT IN ('resolved', 'pending_customer')"
             ),
             postgresql_concurrently=True,
+            if_not_exists=True,  # rerunnable if a concurrent build fails part way (squawk)
         )
 
 
 def downgrade() -> None:
     with op.get_context().autocommit_block():
-        op.drop_index("ix_tickets_res_due", table_name="tickets", postgresql_concurrently=True)
-        op.drop_index("ix_tickets_sla_due", table_name="tickets", postgresql_concurrently=True)
+        op.drop_index(
+            "ix_tickets_res_due", table_name="tickets", postgresql_concurrently=True, if_exists=True
+        )
+        op.drop_index(
+            "ix_tickets_sla_due", table_name="tickets", postgresql_concurrently=True, if_exists=True
+        )
     op.execute("DROP FUNCTION IF EXISTS tenants_with_flag(text)")
     op.drop_index(op.f("ix_feature_flags_tenant_id"), table_name="feature_flags")
     op.drop_table("feature_flags")
