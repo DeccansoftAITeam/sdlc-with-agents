@@ -6,6 +6,7 @@ even if application code is wrong (same pattern as TD-001).
 
 import uuid
 from datetime import datetime
+from typing import Any
 
 from sqlalchemy import (
     BigInteger,
@@ -17,7 +18,7 @@ from sqlalchemy import (
     UniqueConstraint,
     text,
 )
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.models import Base, TenantOwned, Timestamped
@@ -71,6 +72,14 @@ class Ticket(TenantOwned, Timestamped, Base):
     assignee_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True))
     first_replied_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     resolved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # TD-005: the tenant's SLA policy as it was at creation (AC-2), the pending_customer
+    # pauses as [[start, end|null], ...] ISO strings, and the stored deadlines (AC-7).
+    sla_policy: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
+    paused_intervals: Mapped[list[list[str | None]]] = mapped_column(
+        JSONB, server_default=text("'[]'::jsonb")
+    )
+    first_response_due_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    resolution_due_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 
 class TicketMessage(TenantOwned, Timestamped, Base):

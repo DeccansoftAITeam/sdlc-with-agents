@@ -18,3 +18,15 @@ async def require_admin(principal: Annotated[Principal, Depends(current_principa
 
 
 Admin = Annotated[Principal, Depends(require_admin)]
+
+
+async def member(principal: Annotated[Principal, Depends(current_principal)]) -> Principal:
+    """Any active member. Uses the role as it is NOW in the database, not as it was when the
+    token was issued (moved here from tickets/router.py once a second feature needed it)."""
+    role = await service.current_role(principal)
+    if role is None:
+        raise ProblemError(403, "Forbidden", "Account deactivated.")
+    return Principal(principal.user_id, principal.tenant_id, role)
+
+
+Member = Annotated[Principal, Depends(member)]

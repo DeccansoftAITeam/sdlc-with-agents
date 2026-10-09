@@ -3,10 +3,8 @@
 import uuid
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Query, status
 
-from app.core.errors import ProblemError
-from app.core.security import Principal, current_principal
 from app.features.tickets import service
 from app.features.tickets.schemas import (
     MessageIn,
@@ -19,20 +17,9 @@ from app.features.tickets.schemas import (
     TicketPage,
     TicketPatchIn,
 )
-from app.features.users.service import current_role
+from app.features.users.deps import Member
 
 router = APIRouter(tags=["tickets"])
-
-
-async def member(principal: Annotated[Principal, Depends(current_principal)]) -> Principal:
-    """Use the role as it is NOW in the database, not as it was when the token was issued."""
-    role = await current_role(principal)
-    if role is None:
-        raise ProblemError(403, "Forbidden", "Account deactivated.")
-    return Principal(principal.user_id, principal.tenant_id, role)
-
-
-Member = Annotated[Principal, Depends(member)]
 
 
 def _out(model: type[TicketOut], obj: object, **extra: object) -> TicketOut:
