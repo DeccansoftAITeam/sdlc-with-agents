@@ -68,6 +68,9 @@ async def test_td005_ac2_rejects_invalid_policies(client: httpx.AsyncClient) -> 
     week = {"start": "09:00:00", "end": "18:00:00"}
     bad = [
         {**POLICY, "timezone": "Mars/Olympus"},
+        {**POLICY, "timezone": 'Ӱm\U00047e11"\x1f'},  # Schemathesis (M6): was a 500 (OSError)
+        {**POLICY, "timezone": "../../etc/passwd"},
+        {**POLICY, "timezone": "/Europe/London"},
         {**POLICY, "schedule": {"days": [0], "start": "18:00:00", "end": "09:00:00"}},
         {**POLICY, "schedule": {"days": [0, 7], **week}},
         {**POLICY, "schedule": {"days": [], **week}},
