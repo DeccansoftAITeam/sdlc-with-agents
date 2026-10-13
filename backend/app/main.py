@@ -4,6 +4,7 @@ from fastapi import FastAPI
 
 from app.core import errors, ratelimit, security, telemetry
 from app.core.config import get_settings
+from app.core.input_guard import RejectNul
 from app.features.auth.router import router as auth_router
 from app.features.flags.router import router as flags_router
 from app.features.health.router import router as health_router
@@ -15,8 +16,13 @@ from app.features.users.router import router as users_router
 
 def create_app() -> FastAPI:
     settings = get_settings()
-    app = FastAPI(title=settings.app_name)
+    app = FastAPI(
+        title=settings.app_name,
+        responses=errors.PROBLEM_RESPONSES,
+        redirect_slashes=False,  # /tickets/ must 404, not silently become the list (M6 fuzzing)
+    )
     errors.install(app)
+    app.add_middleware(RejectNul)
     ratelimit.install(app)
     security.check_signing_key()
     telemetry.install(app, settings)

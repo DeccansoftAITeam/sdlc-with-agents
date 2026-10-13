@@ -1,5 +1,6 @@
 import re
 from datetime import time
+from typing import Annotated
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from pydantic import BaseModel, Field, field_validator, model_validator
@@ -22,10 +23,30 @@ class TargetIO(BaseModel):
         return self
 
 
+# Wall-clock time in the TENANT's timezone, so no UTC offset. Not `datetime.time`: OpenAPI
+# format "time" means RFC 3339 full-time WITH an offset, which these never have (M6 contract
+# fuzzing caught the mismatch). Normalised to HH:MM:SS.
+LocalTime = Annotated[
+    str, Field(pattern=r"^([01][0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9])?$", examples=["09:00"])
+]
+
+
+def minutes(hhmm: str) -> int:
+    value = time.fromisoformat(hhmm)
+    return value.hour * 60 + value.minute
+
+
 class ScheduleIO(BaseModel):
     days: list[int] = Field(min_length=1, max_length=7)  # 0 = Monday
-    start: time
-    end: time
+    start: LocalTime
+    end: LocalTime
+
+    @field_validator("start", "end")
+    @classmethod
+    def _normalise(cls, value: str) -> str:
+        return time.fromisoformat(
+            value
+        ).isoformat()  # "9:00" is rejected by the pattern; "09:00" -> "09:00:00"
 
     @field_validator("days")
     @classmethod
@@ -71,7 +92,7 @@ class SlaSettingsIO(BaseModel):
         """Reject targets the schedule can't reach within the horizon (code review: a 1-hour
         weekly schedule with a 60-day target made every new ticket a 500)."""
         s = self.schedule
-        weekly = len(s.days) * ((s.end.hour * 60 + s.end.minute) - (s.start.hour * 60 + s.start.minute))
+        weekly = len(s.days) * (minutes(s.end) - minutes(s.start))
         for priority, target in self.targets.items():
             if priority != "P1" and target.resolution_minutes > weekly * HORIZON_WEEKS:
                 raise ValueError(f"{priority} resolution target is too long for this schedule")
