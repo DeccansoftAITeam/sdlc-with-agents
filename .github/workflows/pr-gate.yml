@@ -50,7 +50,7 @@ jobs:
         with: { fetch-depth: 0 }
       - uses: astral-sh/setup-uv@v6
       - uses: actions/setup-node@v5
-        with: { node-version: 22 }
+        with: { node-version: 22, package-manager-cache: false }   # no pnpm in this job
       - name: Create roles (same script as docker compose)
         env: { PGPASSWORD: postgres }
         run: psql -h localhost -U postgres -v ON_ERROR_STOP=1 -f db/init/01-roles.sql
@@ -85,7 +85,7 @@ jobs:
       - uses: astral-sh/setup-uv@v6
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v5
-        with: { node-version: 22, cache: pnpm }
+        with: { node-version: 22, package-manager-cache: false }   # audit needs no install, so no store to cache
       - name: SAST (semgrep, Python + OWASP Top 10 rules)
         run: uvx semgrep scan --config p/python --config p/owasp-top-ten --metrics off --error backend/app
       - name: Python dependencies with known vulnerabilities (pip-audit)
