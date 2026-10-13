@@ -14,7 +14,7 @@
 | T-007-01 | Migration: breach columns + partial indexes | — | M2 | **High** (migration) | Todo |
 | T-007-02 | Sweep service + worker entry point | T-007-01 | M2 | Medium | Todo |
 | T-007-03 | Queue ordering + breach fields in API | T-007-01 | M2 | Medium | Todo |
-| T-007-04 | Web: breach badge + queue order | T-007-03 | M2 | Medium | Todo |
+| T-007-04 | Web: breach badge + queue order | T-007-03 | M2 | Medium | In review |
 | T-007-05 | Metrics + feature flag wiring | T-007-02 | M1 | Low | Todo |
 
 T-007-02 and T-007-03 can run **in parallel**, for example Claude Code on one and Copilot on the other, each in its own `treehouse` worktree.

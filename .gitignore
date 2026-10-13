@@ -13,3 +13,8 @@ dist/
 !.env.example
 *.log
 .agents/audit/
+
+# Web build and E2E artifacts
+*.tsbuildinfo
+apps/web/test-results/
+apps/web/playwright-report/
