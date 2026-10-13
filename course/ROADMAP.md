@@ -14,7 +14,7 @@ The rule throughout: **the course is about the SDLC, not the product.** TicketDe
 | M2 | Specify | P1 | `/spec-draft` → `/grill` → design, ADRs, `tasks.md` | ✅ |
 | M3 | Scaffold | P2 | `/scaffold` (Copier), break RLS on purpose, branch ruleset | ✅ |
 | M4 | Implement | P3 | **TD-007 only**, from tag `m04-start`: acceptance tests first, scope guard, reviewer subagents, PRs | 🟡 foundations A–D done, TD-007 next |
-| M5 | Local gate | P4 | Hook tour; why `--no-verify` is banned; keep pre-push < 90 s | ⬜ |
+| M5 | Local gate | P4 | Measure and tune the hooks (95 s → 56 s); why `--no-verify` is banned and CI is the backstop | ✅ |
 | M6 | PR gate + review | P5–P7 | Full PR pipeline, preview environment, minimal web slice + E2E smoke | ⬜ |
 | M7 | AI feature | P3 (AI) | AI triage (TD-008) through the APIM gateway: evals, guardrails, kill-switch | ⬜ paid Azure |
 | M8 | Scheduled | P8 | Nightly deep tests, weekly agent review, unattended agent jobs, conformance | ⬜ |
