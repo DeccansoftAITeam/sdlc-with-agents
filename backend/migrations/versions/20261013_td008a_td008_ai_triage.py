@@ -35,7 +35,7 @@ def upgrade() -> None:
         sa.Column("tenant_id", sa.UUID(), nullable=False),
         sa.Column("ticket_id", sa.UUID(), nullable=False),
         sa.Column("status", sa.Text(), server_default=sa.text("'queued'"), nullable=False),
-        sa.Column("attempts", sa.Integer(), server_default=sa.text("0"), nullable=False),
+        sa.Column("attempts", sa.BigInteger(), server_default=sa.text("0"), nullable=False),
         sa.Column("paused_reason", sa.Text(), nullable=True),
         sa.Column("created_at", sa.DateTime(timezone=True), server_default=_NOW, nullable=False),
         sa.PrimaryKeyConstraint("id"),
@@ -79,9 +79,9 @@ def upgrade() -> None:
         "ai_usage",
         sa.Column("tenant_id", sa.UUID(), nullable=False),
         sa.Column("month", sa.Date(), nullable=False),
-        sa.Column("input_tokens", sa.Integer(), server_default=sa.text("0"), nullable=False),
-        sa.Column("output_tokens", sa.Integer(), server_default=sa.text("0"), nullable=False),
-        sa.Column("requests", sa.Integer(), server_default=sa.text("0"), nullable=False),
+        sa.Column("input_tokens", sa.BigInteger(), server_default=sa.text("0"), nullable=False),
+        sa.Column("output_tokens", sa.BigInteger(), server_default=sa.text("0"), nullable=False),
+        sa.Column("requests", sa.BigInteger(), server_default=sa.text("0"), nullable=False),
         sa.PrimaryKeyConstraint("tenant_id", "month", name="pk_ai_usage"),
     )
     op.create_index("ix_ai_usage_tenant_id", "ai_usage", ["tenant_id"])

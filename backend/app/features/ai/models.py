@@ -4,12 +4,12 @@ import uuid
 from datetime import date, datetime
 
 from sqlalchemy import (
+    BigInteger,
     CheckConstraint,
     Date,
     DateTime,
     ForeignKeyConstraint,
     Index,
-    Integer,
     PrimaryKeyConstraint,
     Text,
     UniqueConstraint,
@@ -40,7 +40,7 @@ class TriageJob(TenantOwned, Base):
     id: Mapped[uuid.UUID] = _uuid_pk()
     ticket_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True))
     status: Mapped[str] = mapped_column(Text, server_default=text("'queued'"))
-    attempts: Mapped[int] = mapped_column(Integer, server_default=text("0"))
+    attempts: Mapped[int] = mapped_column(BigInteger, server_default=text("0"))
     paused_reason: Mapped[str | None] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=text("now()"))
 
@@ -75,6 +75,6 @@ class Usage(TenantOwned, Base):
     __table_args__ = (PrimaryKeyConstraint("tenant_id", "month", name="pk_ai_usage"),)
 
     month: Mapped[date] = mapped_column(Date)  # first day of the month (UTC)
-    input_tokens: Mapped[int] = mapped_column(Integer, server_default=text("0"))
-    output_tokens: Mapped[int] = mapped_column(Integer, server_default=text("0"))
-    requests: Mapped[int] = mapped_column(Integer, server_default=text("0"))
+    input_tokens: Mapped[int] = mapped_column(BigInteger, server_default=text("0"))
+    output_tokens: Mapped[int] = mapped_column(BigInteger, server_default=text("0"))
+    requests: Mapped[int] = mapped_column(BigInteger, server_default=text("0"))
