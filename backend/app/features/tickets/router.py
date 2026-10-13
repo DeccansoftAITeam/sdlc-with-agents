@@ -3,7 +3,7 @@
 import uuid
 from typing import Annotated
 
-from fastapi import APIRouter, Query, status
+from fastapi import APIRouter, Path, Query, status
 
 from app.features.tickets import service
 from app.features.tickets.schemas import (
@@ -20,6 +20,9 @@ from app.features.tickets.schemas import (
 from app.features.users.deps import Member
 
 router = APIRouter(tags=["tickets"])
+
+# Bounded to the BIGINT column: a larger number used to overflow asyncpg and 500 (M6 fuzzing).
+TicketNumber = Annotated[int, Path(ge=1, le=2**63 - 1)]
 
 
 def _out(model: type[TicketOut], obj: object, escalating: bool = False, **extra: object) -> TicketOut:
@@ -49,7 +52,7 @@ async def list_tickets(
 
 
 @router.get("/t/{slug}/tickets/{number}")
-async def get_ticket(slug: str, number: int, who: Member) -> TicketDetailOut:
+async def get_ticket(slug: str, number: TicketNumber, who: Member) -> TicketDetailOut:
     # The return annotation IS the response model: annotating TicketOut here silently
     # dropped `messages` from the response (caught by the AC-3 acceptance test).
     ticket, messages = await service.get(who, number)
@@ -61,11 +64,11 @@ async def get_ticket(slug: str, number: int, who: Member) -> TicketDetailOut:
 
 
 @router.post("/t/{slug}/tickets/{number}/messages", status_code=status.HTTP_201_CREATED)
-async def add_message(slug: str, number: int, body: MessageIn, who: Member) -> MessageOut:
+async def add_message(slug: str, number: TicketNumber, body: MessageIn, who: Member) -> MessageOut:
     return MessageOut.model_validate(await service.add_message(who, number, body), from_attributes=True)
 
 
 @router.patch("/t/{slug}/tickets/{number}")
-async def update_ticket(slug: str, number: int, body: TicketPatchIn, who: Member) -> TicketOut:
+async def update_ticket(slug: str, number: TicketNumber, body: TicketPatchIn, who: Member) -> TicketOut:
     ticket = await service.update(who, number, body)
     return _out(TicketOut, ticket, await service.breach_escalation_on(who))

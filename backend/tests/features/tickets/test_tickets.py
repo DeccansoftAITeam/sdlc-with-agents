@@ -320,3 +320,13 @@ async def test_td003_ac4_naive_cursor_is_422_not_500(client: httpx.AsyncClient) 
     slug, *_, sam, _, _ = await _setup(client)
     naive = base64.urlsafe_b64encode(b"2026-10-08T10:00:00|5").decode()
     assert (await client.get(f"/t/{slug}/tickets", params={"cursor": naive}, headers=sam)).status_code == 422
+
+
+@pytest.mark.parametrize("method", ["GET", "PATCH", "POST"])
+async def test_ticket_number_beyond_bigint_is_422_not_500(client: httpx.AsyncClient, method: str) -> None:
+    # Found by contract fuzzing in CI (M6): asyncpg overflowed on 3.4e26 and the API returned 500.
+    slug = await tenant(client)
+    admin = await auth(client, slug)
+    path = f"/t/{slug}/tickets/339480193592603374782513152" + ("/messages" if method == "POST" else "")
+    r = await client.request(method, path, headers=admin, json={})
+    assert r.status_code == 422
