@@ -46,10 +46,10 @@ TicketDesk lets companies (**tenants**) run customer support. Any company can si
 | Web | Next.js / React | Same | — |
 | Mobile | React Native (Expo) | Not in scope | — |
 | Cloud target | Cloud-neutral, Azure default | Azure Container Apps, East US 2 | — |
-| LLM provider | via LiteLLM gateway | Azure OpenAI (Foundry) `gpt-4.1-mini`, `text-embedding-3-small` via **Azure APIM AI gateway** | ADR-0001 (M2) |
+| LLM provider | via LiteLLM gateway | Claude via **OrcaRouter** (default) or direct Anthropic; embeddings via OrcaRouter | ADR-0004 (M7), supersedes ADR-0001 |
 | Auth | — | Self-issued JWT (access 15 min, rotating refresh 7 days) | ADR-0002 (M2) |
 | Multi-tenancy | — | Shared DB, `tenant_id` on every row + Postgres RLS; path-slug routing `/t/{slug}` | ADR-0003 (M2) |
-| External services | — | **Only** the Azure APIM AI gateway (ADR-0001). Nothing else leaves the system | — |
+| External services | — | **Only** the AI provider (OrcaRouter or Anthropic, ADR-0004). Nothing else leaves the system | — |
 
 ## 5. Data sensitivity
 
@@ -62,8 +62,8 @@ TicketDesk lets companies (**tenants**) run customer support. Any company can si
 | AI traces | Masked prompts, outputs, scores | Confidential | Masked | GDPR |
 | Audit log | Who did what, when | Confidential | Y | — |
 
-- Data residency: Azure East US 2 for the database, logs, backups, embeddings and LLM processing.
-- Cross-region processing: **No.** The APIM gateway routes only to East US 2 deployments.
+- Data residency: Azure East US 2 for the database, logs, backups and stored embeddings.
+- Cross-region processing: **Yes, for AI only** (ADR-0004). Masked ticket text from opted-in tenants is processed by OrcaRouter or Anthropic outside Azure. The admin opt-in screen discloses this.
 - Retention: logs 30 days, LLM traces 30 days, backups 35 days, closed tickets until the tenant deletes them. Tenant offboarding deletes all rows, embeddings and traces within 30 days.
 
 ## 6. Non-functional requirements
@@ -142,7 +142,7 @@ Error-budget policy: when a budget is exhausted, feature work pauses until it re
 | AI triage | Suggest category + priority on new tickets | Medium | Limited (transparency) | Confidential, masked | **Tenant opt-in** (admin, after disclosure); staff can override; override is logged | $20 |
 | AI suggested reply | Draft a reply from the tenant's KB (RAG) with citations | Medium | Limited (transparency) | Confidential, masked | **Tenant opt-in**; staff must edit or accept before sending | $40 |
 
-**Per-tenant AI limits (enforced by the APIM gateway):** 200k tokens per calendar month and 20 AI requests per minute. When the cap is reached, AI turns off for that tenant until the 1st of the next month, and the UI says so. The API calls APIM with its managed identity and sets the tenant header on the server side; APIM accepts no other caller.
+**Per-tenant AI limits (enforced in the app before every call, ADR-0004):** 200k tokens per calendar month and 20 AI requests per minute. When the cap is reached, AI turns off for that tenant until the 1st of the next month, and the UI says so. The provider key lives in server-side secrets only; the provider account's own spending limit is the backstop.
 
 ## 13. Approval
 
@@ -155,6 +155,7 @@ Error-budget policy: when a budget is exhausted, feature work pauses until it re
 
 | Date | Change | PR |
 |---|---|---|
+| 2026-10-13 | **AI gateway: OrcaRouter (or direct Anthropic) replaces Azure APIM + Azure OpenAI** (PO). AI processing leaves Azure East US 2 (masked, opted-in tenants only); per-tenant caps move into the app. ADR-0004 | M7 |
 | 2026-10-06 | Initial | M1 |
 | 2026-10-08 | **No email, no third-party services except the AI gateway** (PO). Signup is immediate; staff join via admin-copied invite links; resets via admin-issued one-time links; breached-password API replaced by a bundled common-password list | M4 |
 | 2026-10-07 | SLA clock rules footnote (TD-007 grill Q1, Q2, Q6) | M2 |

@@ -80,6 +80,7 @@ Not applicable. (TD-008 AI triage may change priority; AC-13 covers that path li
 | 3 | Does a breach flag clear? | PO | Never. Breach-active ends on reply or resolve; reopen resumes (AC-11, AC-12) |
 | 4 | How is the detector run? | TL | 30 s sweep, advisory lock, per-tenant loop under RLS (design §4) |
 | 5 | Clock paused while `pending_customer`? | PO | Resolution clock only (AC-10) |
+| 6 | When the flag is turned on, do tickets already overdue escalate? | PO | Yes, all at once on the next sweep (PO, 2026-10-13). Admins of a tenant with a large backlog get one notification per breached ticket |
 
 ## 10. Approval
 
