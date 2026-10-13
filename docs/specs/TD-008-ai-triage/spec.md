@@ -78,9 +78,9 @@ Success measure: **AI triage acceptance ≥ 70%** (suggestions accepted without 
 
 | # | Question | Owner | Resolved answer |
 |---|---|---|---|
-| 1 | Should a P1 suggestion notify anyone? | PO | |
-| 2 | Show suggestions to customers? | PO | Proposed: never, staff only |
-| 3 | Keep suggestions after a ticket is resolved? | PO | Proposed: yes, they're the data for the acceptance metric |
+| 1 | Should a P1 suggestion notify anyone? | PO | No. A suggestion is not a decision; P1 SLA alerts start once staff apply P1 (PO, 2026-10-13) |
+| 2 | Show suggestions to customers? | PO | Never: staff only (PO, 2026-10-13) |
+| 3 | Keep suggestions after a ticket is resolved? | PO | Yes: they're the data for the acceptance metric (PO, 2026-10-13) |
 
 ## 9. Approval
 
