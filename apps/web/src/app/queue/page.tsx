@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { type QueueTicket, QueueTable } from "@/features/queue/QueueTable";
-import { api, loadSession } from "@/lib/api";
+import { ApiError, api, clearSession, loadSession } from "@/lib/api";
 
 export default function QueuePage() {
   const router = useRouter();
@@ -18,7 +18,14 @@ export default function QueuePage() {
     }
     api<{ items: QueueTicket[] }>(`/t/${encodeURIComponent(session.slug)}/tickets`, {}, session.token)
       .then((page) => setTickets(page.items))
-      .catch((err: unknown) => setError(err instanceof Error ? err.message : "Could not load tickets"));
+      .catch((err: unknown) => {
+        if (err instanceof ApiError && err.status === 401) {
+          clearSession(); // expired token: sign in again
+          router.replace("/login");
+          return;
+        }
+        setError(err instanceof Error ? err.message : "Could not load tickets");
+      });
   }, [router]);
 
   return (

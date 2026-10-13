@@ -3,7 +3,7 @@
 
 Usage (from backend/, API running, database migrated):
     uv run python ../scripts/e2e_seed.py <api-base-url>
-Prints {"slug", "email", "password", "breached", "calm"} as JSON. Synthetic data only.
+Prints one line `E2E_SEED={"slug", "email", "password", "breached", "calm"}`. Synthetic data only.
 """
 
 import asyncio
@@ -52,7 +52,7 @@ async def main(base: str) -> None:
         )
     await sweep()
     seed = {"slug": slug, "email": email, "password": PASSWORD, "breached": breached, "calm": calm}
-    print(json.dumps(seed))
+    print("E2E_SEED=" + json.dumps(seed))  # prefixed: other stdout lines can't be mistaken for it
 
 
 asyncio.run(main(sys.argv[1]))

@@ -44,3 +44,13 @@ test("wrong password shows an error and stays on the login page", async ({ page 
   await expect(page.getByRole("alert")).toBeVisible();
   await expect(page).toHaveURL(/\/login$/);
 });
+
+test("an invalid or expired token sends the user back to sign in", async ({ page }) => {
+  await page.goto("/login");
+  await page.evaluate(
+    (slug) => sessionStorage.setItem("ticketdesk.session", JSON.stringify({ slug, token: "expired" })),
+    seed().slug,
+  );
+  await page.goto("/queue");
+  await expect(page).toHaveURL(/\/login$/);
+});

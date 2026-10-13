@@ -10,6 +10,19 @@ export function saveSession(s: Session): void {
   sessionStorage.setItem(KEY, JSON.stringify(s));
 }
 
+export function clearSession(): void {
+  sessionStorage.removeItem(KEY);
+}
+
+export class ApiError extends Error {
+  constructor(
+    message: string,
+    readonly status: number,
+  ) {
+    super(message);
+  }
+}
+
 export function loadSession(): Session | null {
   try {
     const raw = sessionStorage.getItem(KEY);
@@ -26,7 +39,7 @@ export async function api<T>(path: string, init: RequestInit = {}, token?: strin
   const r = await fetch(`/api${path}`, { ...init, headers });
   if (!r.ok) {
     const problem = (await r.json().catch(() => ({}))) as { title?: string };
-    throw new Error(problem.title ?? `Request failed (${r.status})`);
+    throw new ApiError(problem.title ?? `Request failed (${r.status})`, r.status);
   }
   return (await r.json()) as T;
 }

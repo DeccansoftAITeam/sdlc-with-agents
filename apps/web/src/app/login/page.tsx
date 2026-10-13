@@ -1,12 +1,14 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { type FormEvent, useState } from "react";
+import { type FormEvent, useEffect, useState } from "react";
 import { api, saveSession } from "@/lib/api";
 
 export default function LoginPage() {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
+  const [ready, setReady] = useState(false); // enabled only once React handles the submit
+  useEffect(() => setReady(true), []);
 
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -27,7 +29,8 @@ export default function LoginPage() {
   return (
     <main>
       <h1>Sign in to TicketDesk</h1>
-      <form onSubmit={onSubmit}>
+      {/* method="post": a submit before hydration must never put the password in the URL */}
+      <form method="post" onSubmit={onSubmit}>
         <label>
           Workspace
           <input name="slug" required autoComplete="organization" />
@@ -40,7 +43,9 @@ export default function LoginPage() {
           Password
           <input name="password" type="password" required autoComplete="current-password" />
         </label>
-        <button type="submit">Sign in</button>
+        <button type="submit" disabled={!ready}>
+          Sign in
+        </button>
         {error && <p role="alert">{error}</p>}
       </form>
     </main>

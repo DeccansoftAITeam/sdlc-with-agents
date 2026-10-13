@@ -1,10 +1,9 @@
 import { defineConfig, devices } from "@playwright/test";
+import { API_PORT, BACKEND_DIR as backend, WEB_PORT } from "./e2e/constants";
 
 // E2E smoke: the real API + real Postgres + the Next app. Ports differ from `pnpm dev:web`
-// (3000 / 8000) so a running dev server is never tested by mistake.
-const API_PORT = 8010;
-const WEB_PORT = 3010;
-const backend = "../../backend";
+// (3000 / 8000) so a running dev server is never tested by mistake. Needs Postgres up and
+// migrated (`docker compose up -d db`, `alembic upgrade head`); CI does both in the e2e job.
 
 export default defineConfig({
   testDir: "e2e",
@@ -32,5 +31,3 @@ export default defineConfig({
     },
   ],
 });
-
-export { API_PORT, backend };
