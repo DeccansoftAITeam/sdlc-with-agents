@@ -13,3 +13,11 @@ dist/
 !.env.example
 *.log
 .agents/audit/
+
+# Web build and E2E artifacts
+*.tsbuildinfo
+apps/web/test-results/
+apps/web/playwright-report/
+apps/web/next-env.d.ts
+# Written by next dev/build; agent instructions come only from the project-owned AGENTS.md
+apps/web/AGENTS.md
