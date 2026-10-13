@@ -15,7 +15,7 @@ The rule throughout: **the course is about the SDLC, not the product.** TicketDe
 | M3 | Scaffold | P2 | `/scaffold` (Copier), break RLS on purpose, branch ruleset | ✅ |
 | M4 | Implement | P3 | **TD-007 only**, from tag `m04-start`: acceptance tests first, scope guard, reviewer subagents, PRs | 🟡 foundations A–D done, TD-007 next |
 | M5 | Local gate | P4 | Measure and tune the hooks (95 s → 56 s); why `--no-verify` is banned and CI is the backstop | ✅ |
-| M6 | PR gate + review | P5–P7 | Full PR pipeline, preview environment, minimal web slice + E2E smoke | ⬜ |
+| M6 | PR gate + review | P5–P7 | PR gate v2: contract fuzzing found 6 bugs in green code (four 500s), breaking-change check, security job, web breach badge with E2E + axe. Preview environment deferred (cost) | ✅ |
 | M7 | AI feature | P3 (AI) | AI triage (TD-008) through the APIM gateway: evals, guardrails, kill-switch | ⬜ paid Azure |
 | M8 | Scheduled | P8 | Nightly deep tests, weekly agent review, unattended agent jobs, conformance | ⬜ |
 | M9 | Release gate | P9 | release-please, signed image, SBOM, staging, the 10 checks, PRR | ⬜ paid Azure |
@@ -52,8 +52,8 @@ Kun tools: `treehouse` (M4 sidebar), `no-mistakes` (M5, optional), `gnhf` (M8), 
 |---|---|---|---|
 | Local gate (pre-commit / pre-push) | M3, M5 | gitleaks, ruff, mypy, pytest + 80% coverage, architecture tests, squawk, Nx affected | ✅ |
 | `pr-gate.yml` v1 | M3 | hygiene, backend, web | ✅ |
-| `pr-gate.yml` v2 | M6 | + contract tests (Schemathesis), breaking-change check (oasdiff), migration safety, AC traceability, mutation on changed code, SAST (semgrep), dependency/CVE gate, agent attribution, E2E smoke | ⬜ |
-| `preview.yml` | M6 | Per-PR environment (one shared Container Apps environment, scale to zero) | ⬜ |
+| `pr-gate.yml` v2 | M6 | + contract fuzzing (Schemathesis), breaking-change check (oasdiff), squawk, public-env, PR title, agent attribution, SAST (semgrep), pip-audit + pnpm audit, E2E smoke + axe (scaffold v1.1–v1.2). AC traceability and mutation on changed code moved to M8 | ✅ |
+| `preview.yml` | M6 → M9 | Per-PR environment (one shared Container Apps environment, scale to zero). Waits for Azure cost approval | ⬜ |
 | `conformance.yml` | M8 | Bundle/scaffold drift, required files, RLS everywhere | ⬜ |
 | `nightly.yml` | M8 | Full mutation, fuzzing, full E2E, DAST (ZAP), load (k6), full AI evals, Trivy | ⬜ |
 | `weekly-review.yml` | M8 | `security-reviewer` on `main`, stale flags, drift report | ⬜ |
@@ -73,9 +73,9 @@ Each pipeline ships as a `project-scaffold` release (v1.1–v1.4) pulled in with
 | LINDDUN (privacy) | Threat model | ✅ |
 | Tenant isolation (forced RLS) | Every table, architecture test, cross-tenant test per endpoint | ✅ |
 | Secret scanning (gitleaks) | Commit hook + CI | ✅ |
-| SAST (semgrep + ruff security rules) | PR gate | 🟡 ruff only |
-| Dependency / CVE SLAs | PR gate + nightly | ⬜ M6/M8 |
-| DAST (ZAP), API fuzzing (Schemathesis) | Nightly / PR | ⬜ M6/M8 |
+| SAST (semgrep + ruff security rules) | PR gate | ✅ M6 |
+| Dependency / CVE SLAs | PR gate + nightly | 🟡 PR gate (M6); nightly in M8 |
+| DAST (ZAP), API fuzzing (Schemathesis) | Nightly / PR | 🟡 fuzzing on PR (M6); DAST in M8 |
 | Supply chain: SBOM, signed images, pinned actions | Release gate | ⬜ M9 |
 | OWASP SAMM | M11 sidebar | ⬜ |
 | EU AI Act Art. 4 (AI literacy) / transparency | Completion record; AI labels in M7 | ⬜ |
