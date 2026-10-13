@@ -64,3 +64,9 @@ markers = [
   "req(id): acceptance criterion this test proves, e.g. req('TD-007/AC-3')",
 ]
 addopts = "--cov=app --cov-report=term-missing:skip-covered --cov-fail-under=80"
+
+[tool.coverage.run]
+# sys.monitoring tracer (Python 3.12+). Measured in M5: the default tracer missed every line
+# run inside SQLAlchemy's async greenlets (reported 86%, true 97%) and added ~20 s to the
+# pre-push gate. Same file drives CI, so local and PR numbers agree.
+core = "sysmon"
