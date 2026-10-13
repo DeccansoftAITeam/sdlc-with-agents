@@ -44,6 +44,17 @@ def test_no_cloud_sdk_in_domain_code() -> None:
     assert offenders == []
 
 
+def test_only_the_ai_feature_calls_a_language_model() -> None:
+    """ADR-0004: every model call passes the per-tenant budget check in app.features.ai."""
+    offenders = [
+        str(p.relative_to(APP))
+        for p in APP.rglob("*.py")
+        if not {"adapters", "ai"} & set(p.relative_to(APP).parts[:2])
+        and any(m.startswith("app.adapters.llm") for m in _imports(p))
+    ]
+    assert offenders == []
+
+
 def test_no_file_over_1000_lines() -> None:
     assert [p.name for p in APP.rglob("*.py") if len(p.read_text(encoding="utf-8").splitlines()) > 1000] == []
 
