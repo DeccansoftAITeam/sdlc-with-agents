@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Status | Accepted |
+| Status | **Superseded** by [ADR-0004](0004-orcarouter-ai-gateway.md) (2026-10-13) |
 | Date | 2026-10-07 |
 | Deciders | Tech Lead |
 | Consulted | Platform/Standards Owner |

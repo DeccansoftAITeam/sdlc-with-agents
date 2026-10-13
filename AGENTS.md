@@ -17,7 +17,7 @@ Self-serve multi-tenant SaaS: companies (tenants) run customer support; customer
 - **Tenant isolation is absolute.** Tenant comes from the JWT only; use `tenant_session()`; every tenant table has forced RLS; every endpoint gets a cross-tenant test. `/t/{slug}` in URLs is for routing only; slug ≠ JWT tenant → 404.
 - **AI suggests, humans decide.** No AI action reaches a customer or changes a ticket without a human.
 - **SLA clocks are server-side.** Use DB `now()`; never trust client time. Deadlines come from `compute_deadlines()` only (TD-005).
-- **Least data in prompts.** Mask PII before any LLM call; LLM calls only via the APIM gateway (ADR-0001).
+- **Least data in prompts.** Mask PII before any LLM call; LLM calls only via `app/adapters/llm/`, behind the per-tenant budget check (ADR-0004).
 - **No PII in logs or traces.** Log ids, not content.
 
 **Non-goals (don't build these):** **any email**, **any third-party service except the AI gateway**, attachments, SSO, billing, mobile, AI auto-actions, per-tenant subdomains.
@@ -63,9 +63,10 @@ uvx pre-commit run --all-files            # local gate; pre-push runs automatica
 
 | ADR | Decision |
 |---|---|
-| [0001](docs/adr/0001-azure-apim-ai-gateway.md) | Azure APIM AI gateway instead of LiteLLM; per-tenant token caps keyed on a server-set header |
+| [0001](docs/adr/0001-azure-apim-ai-gateway.md) | ~~Azure APIM AI gateway~~: superseded by 0004 |
 | [0002](docs/adr/0002-self-issued-jwt-auth.md) | Self-issued JWT (EdDSA, 15 min) + rotating hashed refresh tokens; identity per tenant; no MFA in v1 |
 | [0003](docs/adr/0003-multi-tenancy-rls.md) | Shared DB, `tenant_id` + forced RLS, runtime role without BYPASSRLS, per-tenant loops in jobs |
+| [0004](docs/adr/0004-orcarouter-ai-gateway.md) | OrcaRouter (default) or direct Anthropic; caps, kill-switch and masking in the app |
 
 ## Work in flight
 
