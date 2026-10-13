@@ -5,9 +5,27 @@ from typing import Any
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+from pydantic import BaseModel
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 PROBLEM_JSON = "application/problem+json"
+
+
+class Problem(BaseModel):
+    """RFC 7807 body of every error response; `errors` only on 422."""
+
+    type: str = "about:blank"
+    title: str
+    status: int
+    detail: str | None = None
+    errors: list[dict[str, Any]] | None = None
+
+
+# Documents every error status in OpenAPI (and replaces FastAPI's default 422 schema, which
+# never matched what `install` returns). Found by contract fuzzing in M6.
+PROBLEM_RESPONSES: dict[int | str, dict[str, Any]] = {
+    "default": {"model": Problem, "description": "Error (RFC 7807 Problem Details)"}
+}
 
 
 class ProblemError(Exception):

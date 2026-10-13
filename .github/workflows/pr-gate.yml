@@ -1,15 +1,19 @@
-# P5 PR gate — scaffold v1 subset. Runs the same checks as the local gate, on a clean machine.
-# The full standard gate (contract, mutation, security, e2e-smoke, agent attribution, ...)
-# is added by later scaffold releases (course M6, M8, M9) and pulled in with `copier update`.
+# P5 PR gate v2 (scaffold v1.1, course M6). Re-runs EVERY local check on a clean machine,
+# because hooks can be skipped and CI can't (M5), and adds what's too slow for laptops:
+# contract fuzzing, API breaking-change check, SAST, dependency audit, agent attribution.
+# Still to come: mutation + DAST + evals (nightly, M8), signed images + SBOM (release, M9).
 name: pr-gate
 on:
   pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]   # labels can approve an API break
   merge_group:
 permissions:
   contents: read
 concurrency:
   group: pr-gate-${{ github.ref }}
   cancel-in-progress: true
+env:
+  BASE_REF: origin/${{ github.base_ref || github.event.merge_group.base_ref || 'main' }}
 
 jobs:
   hygiene:
@@ -21,10 +25,19 @@ jobs:
       - uses: astral-sh/setup-uv@v6
       - run: uvx pre-commit run --all-files --hook-stage pre-commit
       - run: python scripts/check_file_length.py --max 1000
+      - run: node scripts/check-public-env.js          # was local-only until v1.1 (M5 finding)
+      - name: PR title is a Conventional Commit (it becomes the squash commit)
+        if: github.event_name == 'pull_request'
+        env: { TITLE: "${{ github.event.pull_request.title }}" }   # env, never inline: titles are untrusted
+        run: python scripts/check_pr_title.py "$TITLE"
+      - name: Agent attribution trailers on agent/* branches (org rules §8)
+        if: github.event_name == 'pull_request'
+        env: { BRANCH: "${{ github.head_ref }}" }
+        run: python scripts/check_agent_attribution.py "$BASE_REF" HEAD "$BRANCH"
 
   backend:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     services:
       db:
         image: pgvector/pgvector:pg17
@@ -34,16 +47,54 @@ jobs:
           --health-cmd "pg_isready -U postgres" --health-interval 2s --health-retries 30
     steps:
       - uses: actions/checkout@v5
+        with: { fetch-depth: 0 }
       - uses: astral-sh/setup-uv@v6
+      - uses: actions/setup-node@v5
+        with: { node-version: 22, package-manager-cache: false }   # no pnpm in this job
       - name: Create roles (same script as docker compose)
         env: { PGPASSWORD: postgres }
         run: psql -h localhost -U postgres -v ON_ERROR_STOP=1 -f db/init/01-roles.sql
-      - working-directory: backend
+      - name: Lint, types, tests + coverage + architecture
+        working-directory: backend
         run: |
           uv sync --frozen
           uv run ruff check . && uv run ruff format --check .
           uv run mypy app
           uv run pytest -q
+      - name: Migration safety (squawk)                 # was local-only until v1.1 (M5 finding)
+        run: bash scripts/squawk_migrations.sh
+      - name: Contract fuzzing (Schemathesis)
+        run: bash scripts/contract_test.sh
+      - name: No breaking API change (oasdiff, base vs head)
+        # A deliberate break needs the `api-breaking-approved` label (report-only then) AND
+        # code-owner approval; the reason goes in the PR description.
+        env:
+          APPROVED: ${{ contains(github.event.pull_request.labels.*.name, 'api-breaking-approved') }}
+        run: |
+          git worktree add /tmp/base "$BASE_REF"
+          (cd /tmp/base/backend && uv sync --frozen -q && uv run python "$GITHUB_WORKSPACE/scripts/export_openapi.py" /tmp/base.json)
+          (cd backend && uv run python ../scripts/export_openapi.py /tmp/head.json)
+          fail=(--fail-on ERR); [ "$APPROVED" = "true" ] && { fail=(); echo "::warning::Breaking API change approved by label"; }
+          docker run --rm -v /tmp:/w tufin/oasdiff:v1.32.1 breaking /w/base.json /w/head.json "${fail[@]}"
+
+  security:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v6
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with: { node-version: 22, package-manager-cache: false }   # audit needs no install, so no store to cache
+      - name: SAST (semgrep, Python + OWASP Top 10 rules)
+        run: uvx semgrep scan --config p/python --config p/owasp-top-ten --metrics off --error backend/app
+      - name: Python dependencies with known vulnerabilities (pip-audit)
+        working-directory: backend
+        run: |
+          uv export --frozen --no-dev --no-hashes --format requirements-txt -o /tmp/req.txt
+          uvx pip-audit -r /tmp/req.txt --no-deps --disable-pip --progress-spinner off
+      - name: JS dependencies with high/critical advisories (pnpm audit)
+        run: pnpm audit --prod --audit-level high
 
   web:
     runs-on: ubuntu-latest
