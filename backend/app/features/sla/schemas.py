@@ -1,3 +1,4 @@
+import re
 from datetime import time
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
@@ -6,6 +7,7 @@ from pydantic import BaseModel, Field, field_validator, model_validator
 from app.features.tickets.schemas import Priority
 
 MAX_MINUTES = 60 * 24 * 60  # 60 days
+IANA_NAME = re.compile(r"^[A-Za-z][A-Za-z0-9_+-]*(/[A-Za-z0-9_+-]+)*$")
 HORIZON_WEEKS = 150  # stays inside deadlines.MAX_DAYS (about 156 weeks)
 
 
@@ -54,9 +56,13 @@ class SlaSettingsIO(BaseModel):
     @field_validator("timezone")
     @classmethod
     def _iana_name(cls, tz: str) -> str:
+        # Shape check first: ZoneInfo turns the name into a file path, and odd input raised
+        # OSError (a 500) on Windows. Found by Schemathesis in M6.
+        if not IANA_NAME.fullmatch(tz):
+            raise ValueError("timezone must be an IANA name, e.g. Europe/London")
         try:
             ZoneInfo(tz)
-        except (ZoneInfoNotFoundError, ValueError):
+        except (ZoneInfoNotFoundError, ValueError, OSError):
             raise ValueError("timezone must be an IANA name, e.g. Europe/London") from None
         return tz
 
