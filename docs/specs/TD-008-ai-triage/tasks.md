@@ -10,7 +10,7 @@
 
 | Task ID | Title | Depends on | Mode | Risk tier | Status |
 |---|---|---|---|---|---|
-| T-008-01 | LLM adapter port + OrcaRouter, Anthropic, fake | — | M2 | **High** | Todo |
+| T-008-01 | LLM adapter port + OrcaRouter, Anthropic, fake | — | M2 | **High** | In review |
 | T-008-02 | Migration + masking + budget | — | M2 | **High** | Todo |
 | T-008-03 | Triage job, worker loop, suggestion API | 01, 02 | M2 | **High** | Todo |
 | T-008-04 | Golden set + eval runner | 01 | M1 | Medium | Todo |

@@ -1,8 +1,9 @@
 """Settings come only from the environment (12-factor, AD-02)."""
 
 from functools import lru_cache
+from typing import Literal
 
-from pydantic import Field
+from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 _DB = "ticketdesk"
@@ -25,6 +26,19 @@ class Settings(BaseSettings):
     jwt_ephemeral_key: bool = False
     # Browser-facing path prefix: Next.js proxies /api/* to this API (refresh-cookie path).
     cookie_path_prefix: str = "/api"
+
+    # AI (ADR-0004). Global kill-switch: off unless explicitly enabled.
+    ai_enabled: bool = False
+    llm_provider: Literal["orcarouter", "anthropic", "fake"] = "orcarouter"
+    # SecretStr: never printed by repr(), logs or tracebacks.
+    orcarouter_api_key: SecretStr | None = None
+    orcarouter_base_url: str = "https://api.orcarouter.ai/v1"
+    anthropic_api_key: SecretStr | None = None
+    anthropic_base_url: str = "https://api.anthropic.com"
+    # Model ids are settings, not code. None = the provider's default (adapters/llm/factory.py).
+    ai_triage_model: str | None = None
+    ai_reply_model: str | None = None
+    llm_timeout_seconds: float = 10.0
 
 
 @lru_cache
